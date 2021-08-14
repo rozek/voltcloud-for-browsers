@@ -6,10 +6,10 @@ import typescript from '@rollup/plugin-typescript';
 import { terser } from 'rollup-plugin-terser'
 
 export default {
-  input: './src/voltcloud-for-browers.ts',
+  input: './src/voltcloud-for-browsers.ts',
   output: [
     {
-      file:     './dist/voltcloud-for-browers.js',
+      file:     './dist/voltcloud-for-browsers.js',
       format:    'umd', // builds for both Node.js and Browser
       name:      'VoltCloud', // required for UMD modules
       noConflict:true,
@@ -17,7 +17,7 @@ export default {
       exports:   'auto',
       plugins:   [terser({ format:{ comments:false, safari10:true } })],
     },{
-      file:     './dist/voltcloud-for-browers.esm.js',
+      file:     './dist/voltcloud-for-browsers.esm.js',
       format:   'esm',
       sourcemap:true
     }
