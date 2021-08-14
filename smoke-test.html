@@ -5,15 +5,22 @@
   <title>voltcloud-for-browsers Smoke Test</title>
 
   <style>
-    #Preparation,
+    #Preparation, #Continuation,
     #Phase_1, #Phase_1_Summary, #Phase_2, #Phase_2_Summary,
     #Phase_3, #Phase_3_Summary, #Phase_4, #Phase_4_Summary,
     #StartSection, #ContinuationSection {
-      display:none
+      display:none;
+      margin:8px 0px 8px 0px;
     }
+
+    table  { margin:8px 0px 8px 0px }
+    button { min-width:100px; padding:4px }
 
     #Console { font-family:monospace; white-space:pre-wrap }
   </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js"></script>
+  <!--script src="./dist/voltcloud-for-browsers.js"></script-->
  </head>
  <body>
   <h1>"voltcloud-for-browsers" Smoke Test</h1>
@@ -43,6 +50,20 @@
       <td>Customer EMail Address:</td>
       <td><input id="CustomerAddressInput" type="email"></td>
      </tr>
+     <tr>
+      <td>Application ZIP Archive:</td>
+      <td><input id="ArchiveInput" type="file" accept="application/zip"></td>
+     </tr>
+    </table>
+  </div>
+
+  <div id="Continuation">
+    Please enter the following detail again:
+    <table>
+     <tr>
+      <td>Developer Password:</td>
+      <td><input id="DeveloperPasswordInput2" type="password"></td>
+     </tr>
     </table>
   </div>
 
@@ -62,7 +83,7 @@
   <div id="ContinuationSection">
     <button id="ContinueButton" disabled>Continue</button>
     &nbsp; &nbsp;
-    <button id="RestartButton"  disabled>Restart</button>
+    <button id="RestartButton">Restart</button>
   </div>
 
   <div id="Console"></div>
@@ -88,7 +109,624 @@
   </div>
 
   <script>
+  import {
+    actOnBehalfOfDeveloper, actOnBehalfOfCustomer,
+    ApplicationRecords, CustomerRecords,
+    focusOnApplication, focusOnApplicationCalled, focusOnNewApplication,
+    ApplicationRecord, changeApplicationNameTo, updateApplicationRecordBy,
+      uploadToApplication, deleteApplication,
+    ApplicationStorage, ApplicationStorageEntry, setApplicationStorageEntryTo,
+      deleteApplicationStorageEntry, clearApplicationStorage,
+    focusOnCustomer, focusOnCustomerWithAddress, focusOnNewCustomer,
+    resendConfirmationEMailToCustomer, confirmCustomerUsing,
+    startPasswordResetForCustomer, resetCustomerPasswordUsing,
+    CustomerRecord, changeCustomerEMailAddressTo, changeCustomerPasswordTo,
+      updateCustomerRecordBy, deleteCustomer,
+    CustomerStorage, CustomerStorageEntry, setCustomerStorageEntryTo,
+      deleteCustomerStorageEntry, clearCustomerStorage
+  } from './dist/voltcloud-for-browsers.esm.js'
 
+  let DeveloperAddress, DeveloperPassword, CustomerAddress
+  let currentPhase
+  let ZIPArchive, CustomerConfirmationToken, CustomerResetToken
+
+  const ApplicationNamePrefix = 'vfb-smoke-test-'
+
+  let ApplicationName, ApplicationInfo, ApplicationStore, StoreValue
+  let CustomerId, CustomerPassword, CustomerInfo, CustomerStore
+
+  const currentPhaseKey = 'voltcloud-for-browsers: currentPhase'
+  const DeveloperKey    = 'voltcloud-for-browsers: Developer'
+  const CustomerKey     = 'voltcloud-for-browsers: Customer'
+
+  const emptyApplicationsShouldBeDeleted = false
+
+  const expect = chai.expect
+
+/**** extract token (if one is present) ****/
+
+  let completeURL = document.location.href
+  switch (true) {
+    case (completeURL.indexOf('/#/confirm/') > 0):
+      CustomerConfirmationToken = completeURL.replace(/^.*\/\#\/confirm\//,''); break
+    case (completeURL.indexOf('/#/reset/') > 0):
+      CustomerResetToken = completeURL.replace(/^.*\/\#\/reset\//,'')
+  }
+
+/**** determine phase ****/
+
+  currentPhase = parseInt(localStorage[currentPhaseKey] || '',10)
+    switch (currentPhase) {
+      case 1:  break
+      case 2:
+      case 3:  if (CustomerConfirmationToken == null) { currentPhase = 1 }; break
+      case 4:  if (CustomerResetToken        == null) { currentPhase = 1 }; break
+      default: currentPhase = 1
+    }
+  localStorage[currentPhaseKey] = currentPhase.toString()
+
+/**** restore settings ****/
+
+  DeveloperAddress = (localStorage[DeveloperKey] || '').trim()
+  CustomerAddress  = (localStorage[CustomerKey]  || '').trim()
+
+/**** display required sections ****/
+
+  function ElementWithId (Id) { return document.getElementById(Id) }
+
+  switch (currentPhase) {
+    case 1:
+      ElementWithId('Phase_1').style.display = 'block'
+        ElementWithId('DeveloperAddressInput').value = DeveloperAddress
+        ElementWithId('CustomerAddressInput') .value = CustomerAddress
+      ElementWithId('Preparation') .style.display = 'block'
+      ElementWithId('StartSection').style.display = 'block'
+      break
+    case 2:
+      ElementWithId('Phase_2').style.display = 'block'
+      if ((DeveloperAddress === '') || (CustomerAddress === '')) {
+        ElementWithId('DeveloperAddressInput').value = DeveloperAddress
+        ElementWithId('CustomerAddressInput') .value = CustomerAddress
+
+        ElementWithId('Preparation').style.display = 'block'
+      } else {
+        ElementWithId('Continuation').style.display = 'block'
+      }
+      ElementWithId('ContinuationSection').style.display = 'block'
+      break
+    case 3:
+      ElementWithId('Phase_3')            .style.display = 'block'
+      ElementWithId('Continuation')       .style.display = 'block'
+      ElementWithId('ContinuationSection').style.display = 'block'
+      break
+    case 4:
+      ElementWithId('Phase_4')            .style.display = 'block'
+      ElementWithId('Continuation')       .style.display = 'block'
+      ElementWithId('ContinuationSection').style.display = 'block'
+  }
+
+/**** handle events ****/
+
+  ElementWithId('DeveloperAddressInput')  .addEventListener('input', updateState1)
+  ElementWithId('DeveloperPasswordInput') .addEventListener('input', updateState1)
+  ElementWithId('DeveloperPasswordInput2').addEventListener('input', updateState2)
+  ElementWithId('CustomerAddressInput')   .addEventListener('input', updateState1)
+  ElementWithId('ArchiveInput')           .addEventListener('input', updateState1)
+
+  ElementWithId('StartButton')   .addEventListener('click', runTests)
+  ElementWithId('ContinueButton').addEventListener('click', runTests)
+
+  ElementWithId('RestartButton').addEventListener('click', () => {
+    localStorage[currentPhaseKey] = '1'
+    document.location.href = '/'
+    document.location.reload()                                // just in case...
+  })
+
+  function updateState1 () {
+    let TargetButton = ElementWithId(
+      currentPhase === 1 ? 'StartButton' : 'ContinueButton'
+    )
+
+    if (
+      (ElementWithId('DeveloperAddressInput') .value.trim() === '') ||
+      (ElementWithId('DeveloperPasswordInput').value.trim() === '') ||
+      (ElementWithId('CustomerAddressInput')  .value.trim() === '') ||
+      (ElementWithId('ArchiveInput')          .files.length === 0)
+    ) {
+      TargetButton.setAttribute('disabled','disabled')
+    } else {
+      TargetButton.removeAttribute('disabled')
+    }
+  }
+
+  function updateState2 () {
+    if (ElementWithId('DeveloperPasswordInput2').value.trim() === '') {
+      ElementWithId('ContinueButton').setAttribute('disabled','disabled')
+    } else {
+      ElementWithId('ContinueButton').removeAttribute('disabled')
+    }
+  }
+
+/**** implement local console ****/
+
+  let global = (new Function('return this'))()
+
+  let originalConsole = global.console
+  global.console = {
+    clear: function clear () {
+      originalConsole.clear()
+      ElementWithId('Console').innerText = ''
+    },
+    log: function log () {
+      let ArgumentList = Array.prototype.slice.call(arguments)
+      originalConsole.log.apply(originalConsole,ArgumentList)
+      ElementWithId('Console').innerText += ArgumentList.join(' ') + '\n'
+    }
+  }
+
+/**** load ZIP archive ****/
+
+  function loadArchive () {
+    let File = ElementWithId('ArchiveInput').files[0]
+    return new Promise((resolve, reject) => {
+      let ArchiveReader = new FileReader()
+        ArchiveReader.onabort = function () {
+          return reject('archive loading has been aborted')
+        }
+
+        ArchiveReader.onerror = function () {
+          return reject(
+            'archive could not be loaded, reason ' + ArchiveReader.error
+          )
+        }
+
+        ArchiveReader.onload = function (Event) {
+          ZIPArchive = Event.target.result
+          return resolve(undefined)
+        }
+      ArchiveReader.readAsArrayBuffer(File)
+    })
+  }
+
+/**** prepare tests ****/
+
+  ElementWithId('DeveloperAddressInput')  .setAttribute('disabled','disabled')
+  ElementWithId('DeveloperPasswordInput') .setAttribute('disabled','disabled')
+  ElementWithId('DeveloperPasswordInput2').setAttribute('disabled','disabled')
+  ElementWithId('CustomerAddressInput')   .setAttribute('disabled','disabled')
+  ElementWithId('ArchiveInput')           .setAttribute('disabled','disabled')
+
+  ElementWithId('StartButton')   .setAttribute('disabled','disabled')
+  ElementWithId('ContinueButton').setAttribute('disabled','disabled')
+  ElementWithId('RestartButton') .setAttribute('disabled','disabled')
+
+  ElementWithId('Console').style.display = 'block'
+
+  if (
+    (currentPhase === 1) ||
+    (currentPhase === 2) && ((DeveloperAddress === '') || (CustomerAddress === ''))
+  ) {
+    localStorage[DeveloperKey] = ElementWithId('DeveloperAddressInput').value.trim()
+    localStorage[CustomerKey]  = ElementWithId('CustomerAddressInput') .value.trim()
+
+    loadArchive().then(runTests).catch((Error) => console.log(Error))
+  } else {
+    runTests()
+  }
+
+/**** run tests ****/
+
+  async function runTests () {
+    await runCommonTests()
+
+  /**** phase-specific tests ****/
+
+    switch (currentPhase) {
+      case 1: await runPhase1Tests(); break
+      case 2: await runPhase2Tests(); break
+      case 3: await runPhase3Tests(); break
+      case 4: await runPhase4Tests()
+    }
+  }
+
+/**** common tests ****/
+
+  async function runCommonTests () {
+    console.log('acting on behalf of developer "' + DeveloperAddress + '"')
+    await actOnBehalfOfDeveloper(DeveloperAddress,DeveloperPassword)
+
+  /**** scan list of existing applications ****/
+
+    let ApplicationRecordList = await ApplicationRecords()
+    expect(ApplicationRecordList).to.be.an('array')
+
+    ApplicationRecordList.forEach(async (ApplicationRecord) => {
+      if (ApplicationRecord.subdomain.startsWith(ApplicationNamePrefix)) {
+        ApplicationName = ApplicationRecord.subdomain
+        return
+      }
+
+      if (emptyApplicationsShouldBeDeleted && (ApplicationRecord.last_upload == null)) {
+        console.log('- deleting empty application "' + ApplicationRecord.subdomain + '"')
+        await deleteApplication(ApplicationRecord.id)
+        return
+      }
+    })
+
+  /**** create new or focus on existing application ****/
+
+    if (ApplicationName == null) {
+      ApplicationName = ApplicationNamePrefix + Math.round(Math.random()*999999999999)
+
+      console.log('- creating new smoke test application "' + ApplicationName + '"')
+
+      await focusOnNewApplication()
+      await changeApplicationNameTo(ApplicationName)
+
+      ApplicationInfo = await ApplicationRecord()
+      expect(ApplicationInfo).to.be.an('object')
+      expect(ApplicationInfo.subdomain).to.equal(ApplicationName)
+
+    /**** just to test "focusOnApplication" as well ****/
+
+      await focusOnApplication(ApplicationInfo.id)
+
+      ApplicationInfo = await ApplicationRecord()
+      expect(ApplicationInfo).to.be.an('object')
+      expect(ApplicationInfo.subdomain).to.equal(ApplicationName)
+    } else {
+      await focusOnApplicationCalled(ApplicationName)
+    }
+
+
+  }
+
+/**** Phase 1 tests ****/
+
+  async function runPhase1Tests () {
+  /**** define (or keep) user confirmation and password reset URLs ****/
+
+    ApplicationInfo = await ApplicationRecord()
+    if (
+      (ApplicationInfo.confirmation_url == null) ||
+      (ApplicationInfo.reset_url        == null)
+    ) {
+      console.log('- setting user confirmation and password reset URLs')
+
+      await updateApplicationRecordBy({
+        confirmation_url:'/#/confirm/{{token}}',
+        reset_url:       '/#/reset/{{token}}'
+      })
+
+      ApplicationInfo = await ApplicationRecord()
+      expect(ApplicationInfo).to.be.an('object')
+      expect(ApplicationInfo.confirmation_url).to.equal('/#/confirm/{{token}}')
+      expect(ApplicationInfo.reset_url)       .to.equal('/#/reset/{{token}}')
+    } else {
+      console.log('- user confirmation and password reset URLs are already set')
+    }
+
+  /**** clear ApplicationStorage ****/
+
+    console.log('- clearing application storage')
+
+    await clearApplicationStorage()
+
+    ApplicationStore = await ApplicationStorage()
+    expect(KeysOf(ApplicationStore).length).to.equal(0)
+
+  /**** test ApplicationStorage management ****/
+
+    console.log('- testing application storage management (for developer)')
+
+    StoreValue = await ApplicationStorageEntry('missing-key')
+    expect(StoreValue).not.to.exist
+
+
+    await setApplicationStorageEntryTo('key-1','value-1')
+
+    StoreValue = await ApplicationStorageEntry('key-1')
+    expect(StoreValue).to.equal('value-1')
+
+    ApplicationStore = await ApplicationStorage()
+    expect(KeysOf(ApplicationStore)).to.have.members(['key-1'])
+
+
+    await setApplicationStorageEntryTo('key-1','value-2')
+
+    StoreValue = await ApplicationStorageEntry('key-1')
+    expect(StoreValue).to.equal('value-2')
+
+    ApplicationStore = await ApplicationStorage()
+    expect(KeysOf(ApplicationStore)).to.have.members(['key-1'])
+
+
+    await deleteApplicationStorageEntry('missing-key')
+
+
+    await deleteApplicationStorageEntry('key-1')
+
+    StoreValue = await ApplicationStorageEntry('key-1')
+    expect(StoreValue).not.to.exist
+
+    ApplicationStore = await ApplicationStorage()
+    expect(KeysOf(ApplicationStore).length).to.equal(0)
+
+  /**** test "clearApplicationStorage" explicitly ****/
+
+    await setApplicationStorageEntryTo('key-1','value-1')
+
+    await clearApplicationStorage()
+
+    ApplicationStore = await ApplicationStorage()
+    expect(KeysOf(ApplicationStore).length).to.equal(0)
+
+  /**** prepare for later ****/
+
+    await setApplicationStorageEntryTo('key-1','value-1')
+
+  /**** test file upload ****/
+
+    console.log('- uploading file archive (' + ZIPArchive.length + ' bytes)')
+    await uploadToApplication(ZIPArchive)
+
+    ApplicationInfo = await ApplicationRecord()
+    expect(ApplicationInfo).to.be.an('object')
+    expect(ApplicationInfo.last_upload).to.exist
+
+  /**** delete existing customers ****/
+
+    let CustomerRecordList = await CustomerRecords()
+    expect(CustomerRecordList).to.be.an('array')
+
+    CustomerRecordList.forEach(async (CustomerRecord) => {
+      console.log('- deleting customer "' + CustomerRecord.email + '"')
+
+      await focusOnCustomer(CustomerRecord.id)
+      await deleteCustomer()
+    })
+
+  /**** create new customer ****/
+
+    console.log('- creating new customer "' + CustomerAddress + '"')
+
+    CustomerPassword = 't0pS3cr3t!'
+    await focusOnNewCustomer(CustomerAddress,CustomerPassword)
+
+    CustomerRecordList = await CustomerRecords()
+    CustomerRecordList.forEach((CustomerRecord) => {
+      if (CustomerRecord.email === CustomerAddress) {
+        CustomerId = CustomerRecord.id
+      }
+    })
+    expect(CustomerId).to.exist
+
+
+    ElementWithId('Phase_1_Summary').style.display = 'block'
+  }
+
+/**** Phase 2 tests ****/
+
+  async function runPhase2Tests () {
+  /**** resend confirmation email ****/
+
+    await resendConfirmationEMailToCustomer(CustomerAddress)
+
+
+    ElementWithId('Phase_2_Summary').style.display = 'block'
+  }
+
+/**** Phase 3 tests ****/
+
+  async function runPhase3Tests () {
+  /**** perform customer confirmation ****/
+
+    console.log('- confirming customer "' + CustomerAddress + '"')
+    await confirmCustomerUsing(CustomerConfirmationToken)
+
+    await focusOnCustomerWithAddress(CustomerAddress)
+
+    CustomerInfo = await CustomerRecord()
+    expect(CustomerInfo).to.be.an('object')
+    expect(CustomerInfo.id).to.equal(CustomerId)
+
+  /**** start password reset ****/
+
+    console.log('- starting password reset for customer "' + CustomerAddress + '"')
+    await startPasswordResetForCustomer(CustomerAddress)
+
+    ElementWithId('Phase_3_Summary').style.display = 'block'
+  }
+
+/**** Phase 4 tests ****/
+
+  async function runPhase4Tests () {
+  /**** perform password reset ****/
+
+    console.log('- performing password reset for customer "' + CustomerAddress + '"')
+    await resetCustomerPasswordUsing(CustomerResetToken,CustomerPassword)
+
+  /**** focus on the given customer ****/
+
+    console.log('- focusing on customer "' + CustomerAddress + '"')
+    await focusOnCustomerWithAddress(CustomerAddress)
+
+    CustomerInfo = await CustomerRecord()
+    expect(CustomerInfo).to.be.an('object')
+    expect(CustomerInfo.id).to.equal(CustomerId)
+
+  /**** test CustomerStorage management ****/
+
+    console.log('- testing customer storage management (for developer)')
+
+    StoreValue = await CustomerStorageEntry('missing-key')
+    expect(StoreValue).not.to.exist
+
+
+    await setCustomerStorageEntryTo('key-1','value-1')
+
+    StoreValue = await CustomerStorageEntry('key-1')
+    expect(StoreValue).to.equal('value-1')
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore)).to.have.members(['key-1'])
+
+
+    await setCustomerStorageEntryTo('key-1','value-2')
+
+    StoreValue = await CustomerStorageEntry('key-1')
+    expect(StoreValue).to.equal('value-2')
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore)).to.have.members(['key-1'])
+
+
+    await deleteCustomerStorageEntry('missing-key')
+
+
+    await deleteCustomerStorageEntry('key-1')
+
+    StoreValue = await CustomerStorageEntry('key-1')
+    expect(StoreValue).not.to.exist
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore).length).to.equal(0)
+
+  /**** test "clearCustomerStorage" explicitly ****/
+
+    await setCustomerStorageEntryTo('key-1','value-1')
+
+    await clearCustomerStorage()
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore).length).to.equal(0)
+
+  /**** let's continue with a customer mandate ****/
+
+    console.log('acting on behalf of customer "' + DeveloperAddress + '"')
+
+//  await focusOnApplicationCalled(ApplicationName)
+    await actOnBehalfOfCustomer(CustomerAddress,CustomerPassword)
+
+  /**** change customer email address ****/
+
+    await changeCustomerEMailAddressTo('a.b@c.d')
+
+    CustomerAddress = 'a.b@c.d'
+    await actOnBehalfOfCustomer(CustomerAddress,CustomerPassword)
+
+  /**** change customer password ****/
+
+    await changeCustomerPasswordTo('an0ther-Passw0rd')
+
+    CustomerPassword = 'an0ther-Passw0rd'
+    await actOnBehalfOfCustomer(CustomerAddress,CustomerPassword)
+
+  /**** change customer password ****/
+
+    await updateCustomerRecordBy({
+      first_name:'John', last_name:'Doe'
+    })
+
+  /**** test "CustomerRecord" ****/
+
+    CustomerInfo = await CustomerRecord()
+
+    console.log('- current customer settings:')
+    console.log('  - internal id:   ', CustomerInfo.id)
+    console.log('  - EMail address: ', CustomerInfo.email)
+    console.log('  - confirmed:     ', CustomerInfo.confirmed ? 'yes' : 'no')
+    console.log('  - first name:    ', CustomerInfo.first_name || '(unknown)')
+    console.log('  - last name:     ', CustomerInfo.last_name  || '(unknown)')
+
+  /**** test ApplicationStorage management ****/
+
+    console.log('- testing application storage management (for customer)')
+
+    StoreValue = await ApplicationStorageEntry('missing-key')
+    expect(StoreValue).not.to.exist
+
+
+    StoreValue = await ApplicationStorageEntry('key-1')
+    expect(StoreValue).to.equal('value-1')
+
+    ApplicationStore = await ApplicationStorage()
+    expect(KeysOf(ApplicationStore)).to.have.members(['key-1'])
+
+  /**** test CustomerStorage management ****/
+
+    console.log('- testing customer storage management (for customer)')
+
+    StoreValue = await CustomerStorageEntry('missing-key')
+    expect(StoreValue).not.to.exist
+
+
+    await setCustomerStorageEntryTo('key-1','value-1')
+
+    StoreValue = await CustomerStorageEntry('key-1')
+    expect(StoreValue).to.equal('value-1')
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore)).to.have.members(['key-1'])
+
+
+    await setCustomerStorageEntryTo('key-1','value-2')
+
+    StoreValue = await CustomerStorageEntry('key-1')
+    expect(StoreValue).to.equal('value-2')
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore)).to.have.members(['key-1'])
+
+
+    await deleteCustomerStorageEntry('missing-key')
+
+
+    await deleteCustomerStorageEntry('key-1')
+
+    StoreValue = await CustomerStorageEntry('key-1')
+    expect(StoreValue).not.to.exist
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore).length).to.equal(0)
+
+  /**** test "clearCustomerStorage" explicitly ****/
+
+    await setCustomerStorageEntryTo('key-1','value-1')
+
+    await clearCustomerStorage()
+
+    CustomerStore = await CustomerStorage()
+    expect(KeysOf(CustomerStore).length).to.equal(0)
+
+  /**** deleteCustomer ****/
+
+    console.log('- deleting customer')
+    await deleteCustomer()
+
+  /**** let's continue with a developer mandate (again) ****/
+
+    console.log('acting on behalf of developer "' + DeveloperAddress + '" again')
+
+    await actOnBehalfOfDeveloper(DeveloperAddress,DeveloperPassword)
+    await focusOnApplicationCalled(ApplicationName)
+
+  /**** deleteApplication ****/
+
+    console.log('- deleting smoke test application')
+    await deleteApplication()
+    ElementWithId('Phase_4_Summary').style.display = 'block'
+  }
+
+  /**** KeysOf ****/
+
+    function KeysOf (Storage) {
+      let KeyList = []
+        for (let Key in Storage) {
+          if (Storage.hasOwnProperty(Key)) { KeyList.push(Key) }
+        }
+      return KeyList
+    }
   </script>
  </body>
 </html>
