@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" style="width:100%; height:100%">
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <title>voltcloud-for-browsers Smoke Test</title>
+
+  <style>
+    #Preparation,
+    #Phase_1, #Phase_1_Summary, #Phase_2, #Phase_2_Summary,
+    #Phase_3, #Phase_3_Summary, #Phase_4, #Phase_4_Summary,
+    #StartSection, #ContinuationSection {
+      display:none
+    }
+
+    #Console { font-family:monospace; white-space:pre-wrap }
+  </style>
+ </head>
+ <body>
+  <h1>"voltcloud-for-browsers" Smoke Test</h1>
+
+  <div id="Phase_1">
+    <b>Phase 1:</b> starts smoke testing, finally sends a first confirmation
+    message.
+  </div>
+
+  <div id="Phase_2">
+    <b>Phase 2:</b> ignores first confirmation token and continues smoke testing,
+    finally sends a second confirmation message
+  </div>
+
+  <div id="Preparation">
+    Please enter the following details:
+    <table>
+     <tr>
+      <td>Developer EMail Address:</td>
+      <td><input id="DeveloperAddressInput" type="email"></td>
+     </tr>
+     <tr>
+      <td>Developer Password:</td>
+      <td><input id="DeveloperPasswordInput" type="password"></td>
+     </tr>
+     <tr>
+      <td>Customer EMail Address:</td>
+      <td><input id="CustomerAddressInput" type="email"></td>
+     </tr>
+    </table>
+  </div>
+
+  <div id="Phase_3">
+    <b>Phase 3:</b> confirms the previously created customer and continues
+    smoke testing, finally sends a password reset message
+  </div>
+
+  <div id="Phase_4">
+    <b>Phase 4:</b> resets the customer's password and finishes smoke testing
+  </div>
+
+  <div id="StartSection">
+    <button id="StartButton" disabled>Start</button>
+  </div>
+
+  <div id="ContinuationSection">
+    <button id="ContinueButton" disabled>Continue</button>
+    &nbsp; &nbsp;
+    <button id="RestartButton"  disabled>Restart</button>
+  </div>
+
+  <div id="Console"></div>
+
+  <div id="Phase_1_Summary">
+    A first customer confirmation message has been sent. Please, look into the
+    customer's mailbox, open that message and click on the link it contains
+  </div>
+
+  <div id="Phase_2_Summary">
+    Another customer confirmation message has been sent. Please, look into the
+    customer's mailbox, open that message and click on the link it contains
+  </div>
+
+  <div id="Phase_3_Summary">
+    A password reset message has been sent. Please, look into the customer's
+    mailbox, open that message and click on the link it contains
+  </div>
+
+  <div id="Phase_4_Summary">
+    Smoke testing has finished - it seems that "voltcloud-for-browsers" is
+    working properly
+  </div>
+
+  <script>
+
+  </script>
+ </body>
+</html>
