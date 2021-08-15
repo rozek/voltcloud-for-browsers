@@ -20,7 +20,7 @@
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js"></script>
-  <!--script src="./dist/voltcloud-for-browsers.js"></script-->
+  <script src="./dist/voltcloud-for-browsers.js"></script>
  </head>
  <body>
   <h1>"voltcloud-for-browsers" Smoke Test</h1>
@@ -109,7 +109,9 @@
   </div>
 
   <script>
-  import {
+  let global = (new Function('return this'))()
+
+  ;`
     actOnBehalfOfDeveloper, actOnBehalfOfCustomer,
     ApplicationRecords, CustomerRecords,
     focusOnApplication, focusOnApplicationCalled, focusOnNewApplication,
@@ -124,7 +126,9 @@
       updateCustomerRecordBy, deleteCustomer,
     CustomerStorage, CustomerStorageEntry, setCustomerStorageEntryTo,
       deleteCustomerStorageEntry, clearCustomerStorage
-  } from './dist/voltcloud-for-browsers.esm.js'
+  `.replace(/,/g,'').replace(/\s+/,' ').trim().split(' ').forEach(
+    (FunctionName) => global[FunctionName] = VoltCloud[FunctionName]
+  )
 
   let DeveloperAddress, DeveloperPassword, CustomerAddress
   let currentPhase
@@ -248,8 +252,6 @@
   }
 
 /**** implement local console ****/
-
-  let global = (new Function('return this'))()
 
   let originalConsole = global.console
   global.console = {
