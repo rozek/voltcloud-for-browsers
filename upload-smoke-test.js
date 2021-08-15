@@ -7,6 +7,8 @@
     actOnBehalfOfDeveloper, focusOnApplicationCalled, uploadToApplication
   } from 'voltcloud-for-nodejs'
 
+  import JSZip from 'jszip'
+
   import path from 'path'
   import  fs  from 'fs'
 
@@ -39,16 +41,22 @@
     process.exit(3)
   }
 
-/**** validate archive presence ****/
+/**** build archive ****/
 
-  let Archive
+  let SmokeTest
   try {
-    let FilePath = path.join(process.cwd(),'smoke-test-archive-for-upload.zip')
-    Archive = fs.readFileSync(FilePath)
+    let FilePath = path.join(process.cwd(),'smoke-test.html')
+    SmokeTest = fs.readFileSync(FilePath)
   } catch (Signal) {
-    console.error('could not load file "smoke-test-archive-for-upload.zip"',Signal)
+    console.error('could not load file "smoke-test.html"',Signal)
     process.exit(4)
   }
+
+/**** build archive ****/
+
+  let Archive = await (
+    JSZip().file('index.html',SmokeTest).generateAsync({ type:'nodebuffer' })
+  )
 
 /**** upload archive ****/
 
