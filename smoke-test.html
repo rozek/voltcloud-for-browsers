@@ -290,35 +290,35 @@
     })
   }
 
-/**** prepare tests ****/
-
-  ElementWithId('DeveloperAddressInput')  .setAttribute('disabled','disabled')
-  ElementWithId('DeveloperPasswordInput') .setAttribute('disabled','disabled')
-  ElementWithId('DeveloperPasswordInput2').setAttribute('disabled','disabled')
-  ElementWithId('CustomerAddressInput')   .setAttribute('disabled','disabled')
-  ElementWithId('ArchiveInput')           .setAttribute('disabled','disabled')
-
-  ElementWithId('StartButton')   .setAttribute('disabled','disabled')
-  ElementWithId('ContinueButton').setAttribute('disabled','disabled')
-  ElementWithId('RestartButton') .setAttribute('disabled','disabled')
-
-  ElementWithId('Console').style.display = 'block'
-
-  if (
-    (currentPhase === 1) ||
-    (currentPhase === 2) && ((DeveloperAddress === '') || (CustomerAddress === ''))
-  ) {
-    localStorage[DeveloperKey] = ElementWithId('DeveloperAddressInput').value.trim()
-    localStorage[CustomerKey]  = ElementWithId('CustomerAddressInput') .value.trim()
-
-    loadArchive().then(runTests).catch((Error) => console.log(Error))
-  } else {
-    runTests()
-  }
-
 /**** run tests ****/
 
   async function runTests () {
+    ElementWithId('DeveloperAddressInput')  .setAttribute('disabled','disabled')
+    ElementWithId('DeveloperPasswordInput') .setAttribute('disabled','disabled')
+    ElementWithId('DeveloperPasswordInput2').setAttribute('disabled','disabled')
+    ElementWithId('CustomerAddressInput')   .setAttribute('disabled','disabled')
+    ElementWithId('ArchiveInput')           .setAttribute('disabled','disabled')
+
+    ElementWithId('StartButton')   .setAttribute('disabled','disabled')
+    ElementWithId('ContinueButton').setAttribute('disabled','disabled')
+    ElementWithId('RestartButton') .setAttribute('disabled','disabled')
+
+    ElementWithId('Console').style.display = 'block'
+
+    if (
+      (currentPhase === 1) ||
+      (currentPhase === 2) && ((DeveloperAddress === '') || (CustomerAddress === ''))
+    ) {
+      localStorage[DeveloperKey] = ElementWithId('DeveloperAddressInput').value.trim()
+      localStorage[CustomerKey]  = ElementWithId('CustomerAddressInput') .value.trim()
+
+      loadArchive().then(runTests).catch((Error) => console.log(Error))
+    } else {
+      runTests()
+    }
+
+  /**** let's start ****/
+
     await runCommonTests()
 
   /**** phase-specific tests ****/
