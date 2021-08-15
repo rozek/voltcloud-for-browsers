@@ -52,10 +52,13 @@
     process.exit(4)
   }
 
-/**** build archive ****/
+/**** build (and save) archive ****/
 
   let Archive = await (
     JSZip().file('index.html',SmokeTest).generateAsync({ type:'nodebuffer' })
+  )
+  fs.writeFileSync(
+    path.join(process.cwd(),'smoke-test-archive-for-upload.zip'),Archive
   )
 
 /**** upload archive ****/
