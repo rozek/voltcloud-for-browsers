@@ -208,6 +208,27 @@ Note: additionally, developers may also call any functions mentioned in the prev
 
 Note: additionally, developers may also call any functions mentioned in the previous sections, which do either not require any mandate or may be used with developer or customer mandates
 
+## Smoke Test ##
+
+This repository contains a small "smoke test" (in a file called "smoke-test.html") which may also serve as an example for how to use `voltcloud-for-browsers`. It illustrates the "good cases" of all functions offered by this library.
+
+### Preparation ###
+
+Before that test may be run, a few preparational steps have to be taken:
+
+1. download this repository (either using [git](https://git-scm.com/) in any of its variants or by unpacking a downloaded a [ZIP archive containing this repo](https://github.com/rozek/voltcloud-for-browsers/archive/refs/heads/main.zip)) - it contains the ZIP archive with the smoke test which will have to be uploaded to VoltCloud soon
+2. Navigate to the VoltCloud dashboard, sign in and create a new application - you may rename it if desired, but that's not really important
+3. enter `/#/confirm/{{token}}` as the "Confirm Page" and `/#/reset/{{token}}` as the "Reset Page"
+4. click on "Save" to persist theses changes
+5. now "Upload" the file `smoke-test-archive-for-upload.zip` from this repository
+6. finally click on the "Action" named "Storage", then on "+ Add" and enter `key-1` as the "Key" and `value-1` as the "Value" of a new application Storage entry - there is no need to explicitly "Save" theses settings
+
+### Execution ###
+
+To run this test, simply click on the application's "URL" shown in the VoltCloud dashboard. 
+
+
+
 ## Build Instructions ##
 
 You may easily build this package yourself.
