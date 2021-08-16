@@ -225,9 +225,24 @@ Before that test may be run, a few preparational steps have to be taken:
 
 ### Execution ###
 
-To run this test, simply click on the application's "URL" shown in the VoltCloud dashboard. 
+To run this test, simply click on the application's "URL" shown in the VoltCloud dashboard.
 
+The whole test will run in four phases. At first, you will have to enter
 
+* the EMail address of an application developer (that is you)
+* the develpper's password (the one used to sign into VoltCloud)
+* the EMail address of a "customer" (different from the developer! choose an address you have access to as you will have to open several incoming EMails)
+* the VoltCloud id of your smoke test (shown as the "Id" in the VoltCloud dashboard)
+
+Clicking on "Start" will start the first test phase which ends sending a first confirmation message to the EMail address configured for the "customer".
+
+Open that message in the customer's mailbox and click on the link it contains - this will start phase 2 of the test. You will have to enter the developer's password again (which is not saved for security reasons) and click on "Continue". Phase 2 will end with sending another confirmation message to the customer.
+
+Again, open this message and click on the link it contains - this will start phase 3 of the test. Like before, you will have to enter the developer's password and click on "Continue". Phase 3 will end with sending a password reset message to the customer.
+
+Open this message as well and click on the link it contains - this will start the fourth and final phase of the test. Again, you will have to enter the developer's password and click on "Continue"
+
+During all phases, the actual progress will be reported by means of log messages - in the end, a final summary will inform you about what to do next.
 
 ## Build Instructions ##
 
