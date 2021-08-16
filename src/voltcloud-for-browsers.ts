@@ -23,24 +23,6 @@
 
   export type VC_ApplicationName = string    // mainly for illustrative purposes
 
-  export type VC_ApplicationRecord = {
-    id:string, owner:string, subdomain:string, disabled:boolean,
-    url:string, canonical_domain?:string,
-    confirmation_url?:string, reset_url?:string,
-    last_upload?:string, nice_links:boolean,
-    cors_type:string, cors_domain?:string,
-    frame_type:string, frame_domain?:string,
-  }
-
-  export type VC_ApplicationUpdate = {
-    subdomain?:string, disabled?:boolean,
-    canonical_domain?:string,
-    confirmation_url?:string, reset_url?:string,
-    nice_links?:boolean,
-    cors_type?:string, cors_domain?:string,
-    frame_type?:string, frame_domain?:string,
-  }
-
   export type VC_CustomerRecord = {
     id:string, email:VC_EMailAddress, first_name?:VC_NamePart, last_name?:VC_NamePart,
     confirmed:boolean, admin:boolean, meta?:any
@@ -64,9 +46,6 @@
 
   const Timeout = 30 * 1000                       // request timeout given in ms
 
-  const DashboardURL = 'https://dashboard.voltcloud.io'
-  const DashboardId  = 'RpYCMN'
-
   let activeDeveloperId:       string | undefined
   let activeDeveloperAddress:  string | undefined
   let activeDeveloperPassword: string | undefined    // stored for token refresh
@@ -83,6 +62,14 @@
   let currentCustomerId:      string | undefined
   let currentCustomerAddress: string | undefined
 
+/**** focusOnApplication - async for for the sake of systematics only ****/
+
+  export async function focusOnApplication (
+    ApplicationURL:string
+  ):Promise<void> {
+    currentApplicationURL = ApplicationURL
+  }
+
 /**** actOnBehalfOfDeveloper ****/
 
   export async function actOnBehalfOfDeveloper (
@@ -90,6 +77,8 @@
   ):Promise<void> {
     expectEMailAddress('VoltCloud developer email address',EMailAddress)
     expectPassword         ('VoltCloud developer password',Password)
+
+    assertApplicationFocus()
 
     await loginDeveloper(EMailAddress,Password)
   }
@@ -107,92 +96,6 @@
     await loginCustomer(EMailAddress,Password)
   }
 
-/**** ApplicationRecords ****/
-
-  export async function ApplicationRecords ():Promise<VC_ApplicationRecord[]> {
-    assertDeveloperMandate()
-
-    let Response = await ResponseOf(
-      'private', 'GET', '{{dashboard_url}}/api/app'
-    )
-    return Response || []
-  }
-
-/**** focusOnApplication - async for for the sake of systematics only ****/
-
-  export async function focusOnApplication (
-    ApplicationIdOrURL:string
-  ):Promise<void> {
-    if (activeDeveloperId != null) {
-      expectNonEmptyString('VoltCloud application id',ApplicationIdOrURL)
-
-      currentApplicationId  = undefined
-      currentApplicationURL = undefined
-
-      let ApplicationRecordList = await ApplicationRecords()
-      for (let i = 0, l = ApplicationRecordList.length; i < l; i++) {
-        let ApplicationRecord = ApplicationRecordList[i]
-        if (ApplicationRecord.id === ApplicationIdOrURL) {
-          currentApplicationId  = ApplicationIdOrURL
-          currentApplicationURL = ApplicationRecord.url
-          return
-        }
-      }
-
-      throwError(
-        'NoSuchApplication: no application with id ' + quoted(ApplicationIdOrURL) +
-        ' found for the currently focused developer'
-      )
-    } else {   // customers do not need a mandate for focusing on an application
-      currentApplicationId  = undefined
-      currentApplicationURL = ApplicationIdOrURL
-    }
-  }
-
-/**** focusOnApplicationCalled ****/
-
-  export async function focusOnApplicationCalled (
-    ApplicationName:VC_ApplicationName
-  ):Promise<void> {
-    expectApplicationName('VoltCloud application name',ApplicationName)
-
-//  assertDeveloperMandate()             // will be done by "ApplicationRecords"
-
-    currentApplicationId  = undefined
-    currentApplicationURL = undefined
-
-    let ApplicationRecordList = await ApplicationRecords()
-    for (let i = 0, l = ApplicationRecordList.length; i < l; i++) {
-      let ApplicationRecord = ApplicationRecordList[i]
-      if (ApplicationRecord.subdomain === ApplicationName) {
-        currentApplicationId  = ApplicationRecord.id
-        currentApplicationURL = ApplicationRecord.url
-        return
-      }
-    }
-
-    throwError(
-      'NoSuchApplication: no application called ' + quoted(ApplicationName) +
-      ' found for the currently focused developer'
-    )
-  }
-
-/**** focusOnNewApplication ****/
-
-  export async function focusOnNewApplication ():Promise<void> {
-    assertDeveloperMandate()
-
-    currentApplicationId  = undefined
-    currentApplicationURL = undefined
-
-    let Response = await ResponseOf(
-      'private', 'POST', '{{dashboard_url}}/api/app', null, {}
-    )
-
-    currentApplicationId  = Response.id
-    currentApplicationURL = Response.url
-  }
-
 /**** ApplicationStorage ****/
 
   export async function ApplicationStorage ():Promise<VC_StorageSet> {
@@ -201,9 +104,8 @@
 
     let Response
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       Response = await ResponseOf(
-        'private', 'GET', URL + '/api/storage/{{application_id}}'
+        'private', 'GET', '{{application_url}}/api/storage/{{application_id}}'
       )
     } catch (Signal) {
       switch (Signal.HTTPStatus) {
@@ -236,9 +138,8 @@
 
     let Response
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       Response = await ResponseOf(
-        'private', 'GET', URL + '/api/storage/{{application_id}}/key/{{application_storage_key}}', {
+        'private', 'GET', '{{application_url}}/api/storage/{{application_id}}/key/{{application_storage_key}}', {
           application_storage_key: StorageKey
         }
       )
@@ -266,138 +167,6 @@
     return Response
   }
 
-/**** setApplicationStorageEntryTo ****/
-
-  export async function setApplicationStorageEntryTo (
-    StorageKey:VC_StorageKey, StorageValue:VC_StorageValue
-  ):Promise<void> {
-    expectStorageKey    ('VoltCloud application storage key',StorageKey)
-    expectStorageValue('VoltCloud application storage value',StorageValue)
-
-    assertDeveloperMandate()
-    assertApplicationFocus()
-
-    try {
-      await ResponseOf(
-        'private', 'PUT', '{{dashboard_url}}/api/storage/{{application_id}}/key/{{application_storage_key}}', {
-          application_storage_key: StorageKey
-        }, StorageValue
-      )
-    } catch (Signal) {
-      switch (Signal.HTTPStatus) {
-        case 404: switch (Signal.message) {
-            case 'Could not route your request.':
-            case 'App not found.':
-              throwError('NoSuchApplication: could not find the given application')
-          }
-          break
-        case 413: throwError('InvalidArgument: the given storage value is too long')
-        case 422: switch (Signal.message) {
-            case 'Could not decode scope.':
-              throwError('InvalidArgument: invalid application id given')
-            case 'The length of the key parameter must be <=255.':
-              throwError('InvalidArgument: the given storage key is too long')
-          }
-        default: throw Signal
-      }
-    }
-  }
-
-/**** deleteApplicationStorageEntry ****/
-
-  export async function deleteApplicationStorageEntry (
-    StorageKey:VC_StorageKey
-  ):Promise<void> {
-    expectStorageKey('VoltCloud application storage key',StorageKey)
-
-    assertDeveloperMandate()
-    assertApplicationFocus()
-
-    try {
-      await ResponseOf(
-        'private', 'DELETE', '{{dashboard_url}}/api/storage/{{application_id}}/key/{{application_storage_key}}', {
-          application_storage_key: StorageKey
-        }
-      )
-    } catch (Signal) {
-      switch (Signal.HTTPStatus) {
-        case 404: switch (Signal.message) {
-            case 'Could not route your request.':
-              throwError('NoSuchApplication: could not find the given application or storage key')
-            case 'App not found.':
-              throwError('NoSuchApplication: could not find the given application')
-            case 'Key does not exist.':
-              return
-          }
-          break
-        case 422: switch (Signal.message) {
-            case 'Could not decode scope.':
-              throwError('InvalidArgument: invalid application id given')
-            case 'The length of the key parameter must be <=255.':
-              throwError('InvalidArgument: the given storage key is too long')
-          }
-        default: throw Signal
-      }
-    }
-  }
-
-/**** clearApplicationStorage ****/
-
-  export async function clearApplicationStorage ():Promise<void> {
-    assertDeveloperMandate()
-    assertApplicationFocus()
-
-    try {
-      await ResponseOf(
-        'private', 'DELETE', '{{dashboard_url}}/api/storage/{{application_id}}'
-      )
-    } catch (Signal) {
-      switch (Signal.HTTPStatus) {
-        case 404: switch (Signal.message) {
-            case 'Could not route your request.':
-            case 'App not found.':
-              throwError('NoSuchApplication: could not find the given application')
-          }
-          break
-        case 422: switch (Signal.message) {
-            case 'Could not decode scope.':
-              throwError('InvalidArgument: invalid application id given')
-          }
-        default: throw Signal
-      }
-    }
-  }
-
-/**** CustomerRecords ****/
-
-  export async function CustomerRecords ():Promise<VC_CustomerRecord[]> {
-    assertDeveloperMandate()
-    assertApplicationFocus()
-
-    let Response
-    try {
-      Response = await ResponseOf(
-        'private', 'GET', '{{dashboard_url}}/api/app/{{application_id}}/users'
-      )
-    } catch (Signal) {
-      switch (Signal.HTTPStatus) {
-        case 404: switch (Signal.message) {
-            case 'Could not route your request.':
-            case 'App not found.':
-              throwError('NoSuchApplication: could not find the given application')
-          }
-          break
-        case 422: switch (Signal.message) {
-            case 'Could not decode scope.':
-              throwError('InvalidArgument: invalid application id given')
-          }
-        default: throw Signal
-      }
-    }
-
-    return Response || []
-  }
-
 /**** focusOnCustomer - async for for the sake of systematics only ****/
 
   export async function focusOnCustomer (
@@ -408,52 +177,7 @@
     assertDeveloperMandate()
     assertApplicationFocus()
 
-    currentCustomerId      = undefined
-    currentCustomerAddress = undefined
-
-    let CustomerRecordList = await CustomerRecords()
-    for (let i = 0, l = CustomerRecordList.length; i < l; i++) {
-      let CustomerRecord = CustomerRecordList[i]
-      if (CustomerRecord.id === CustomerId) {
-        currentCustomerId      = CustomerId
-        currentCustomerAddress = CustomerRecord.email
-        return
-      }
-    }
-
-    throwError(
-      'NoSuchCustomer: no customer with id ' + quoted(CustomerId) +
-      ' found for the currently focused application'
-    )
-  }
-
-/**** focusOnCustomerWithAddress ****/
-
-  export async function focusOnCustomerWithAddress (
-    EMailAddress:string
-  ):Promise<void> {
-    expectEMailAddress('VoltCloud customer email address',EMailAddress)
-
-    assertDeveloperMandate()
-    assertApplicationFocus()
-
-    currentCustomerId      = undefined
-    currentCustomerAddress = undefined
-
-    let CustomerRecordList = await CustomerRecords()
-    for (let i = 0, l = CustomerRecordList.length; i < l; i++) {
-      let CustomerRecord = CustomerRecordList[i]
-      if (CustomerRecord.email === EMailAddress) {
-        currentCustomerId      = CustomerRecord.id
-        currentCustomerAddress = EMailAddress
-        return
-      }
-    }
-
-    throwError(
-      'NoSuchCustomer: no customer with email address ' + quoted(EMailAddress) +
-      ' found for the currently focused application'
-    )
+    currentCustomerId = CustomerId     // no more validations possible right now
   }
 
 /**** focusOnNewCustomer ****/
@@ -619,46 +343,24 @@
     allowNonEmptyString('VoltCloud customer id',CustomerId)
 
     assertApplicationFocus()
-
-    if (CustomerId == null) {
-      assertCustomerFocus()
-      CustomerId = currentCustomerId as string
-    }
+    assertCustomerMandate()
 
     let Response
-      if (activeCustomerId == null) {
-        assertDeveloperMandate()
-
-      /**** custom implementation ****/
-
-        let CustomerRecordList = await CustomerRecords()
-        for (let i = 0, l = CustomerRecordList.length; i < l; i++) {
-          let CustomerRecord = CustomerRecordList[i]
-          if (CustomerRecord.id = CustomerId) {
-            Response = CustomerRecord
-            break
+      try {
+        Response = await ResponseOf(
+          'private', 'GET', '{{application_url}}/api/user/{{customer_id}}', {
+            customer_id: activeCustomerId
           }
-        }
-      } else {
-        assertCustomerMandate()
-
-        try {
-          Response = await ResponseOf(
-            'private', 'GET', '{{application_url}}/api/user/{{customer_id}}', {
-              customer_id: CustomerId
+        )
+      } catch (Signal) {
+        switch (Signal.HTTPStatus) {
+          case 422: switch (Signal.message) {
+              case 'Could not decode scope.':
+                throwError('InvalidArgument: invalid customer id given')
             }
-          )
-        } catch (Signal) {
-          switch (Signal.HTTPStatus) {
-            case 422: switch (Signal.message) {
-                case 'Could not decode scope.':
-                  throwError('InvalidArgument: invalid customer id given')
-              }
-            default: throw Signal
-          }
+          default: throw Signal
         }
       }
-
     if ((Response != null) && (Response.id === CustomerId)) {
 //    currentCustomerId      = Response.id
       currentCustomerAddress = Response.email              // might have changed
@@ -811,9 +513,8 @@
     assertCustomerFocus()
 
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       await ResponseOf(
-        'private', 'DELETE', URL + '/api/user/{{customer_id}}'
+        'private', 'DELETE', '{{application_url}}/api/user/{{customer_id}}'
       )
     } catch (Signal) {
       switch (Signal.HTTPStatus) {
@@ -839,9 +540,8 @@
 
     let Response
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       Response = await ResponseOf(
-        'private', 'GET', URL + '/api/storage/{{customer_id}}'
+        'private', 'GET', '{{application_url}}/api/storage/{{customer_id}}'
       )
     } catch (Signal) {
       switch (Signal.HTTPStatus) {
@@ -875,9 +575,8 @@
 
     let Response
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       Response = await ResponseOf(
-        'private', 'GET', URL + '/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
+        'private', 'GET', '{{application_url}}/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
           customer_storage_key: StorageKey
         }
       )
@@ -918,9 +617,8 @@
     assertCustomerFocus()
 
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       await ResponseOf(
-        'private', 'PUT', URL + '/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
+        'private', 'PUT', '{{application_url}}/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
           customer_storage_key: StorageKey
         }, StorageValue
       )
@@ -956,9 +654,8 @@
     assertCustomerFocus()
 
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       await ResponseOf(
-        'private', 'DELETE', URL + '/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
+        'private', 'DELETE', '{{application_url}}/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
           customer_storage_key: StorageKey
         }
       )
@@ -989,9 +686,8 @@
     assertCustomerFocus()
 
     try {
-      let URL = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}')
       await ResponseOf(
-        'private', 'DELETE', URL + '/api/storage/{{customer_id}}'
+        'private', 'DELETE', '{{application_url}}/api/storage/{{customer_id}}'
       )
     } catch (Signal) {
       switch (Signal.HTTPStatus) {
@@ -1113,10 +809,10 @@
     )
   }
 
-/**** assertCustomerFocus ****/
+/**** assertCustomerFocus (based on EMail address here) ****/
 
   function assertCustomerFocus ():void {
-    if (currentCustomerId == null) throwError(
+    if (currentCustomerAddress == null) throwError(
       'InvalidState: please focus on a specific VoltCloud application customer first'
     )
   }
@@ -1149,7 +845,7 @@
           grant_type: 'password',
           username:   EMailAddress,
           password:   Password,
-          scope:      DashboardId
+          scope:      currentApplicationId
         }, firstAttempt
       )
     } catch (Signal) {
@@ -1238,8 +934,6 @@
     firstAttempt:boolean = true
   ):Promise<any> {
     let fullParameters = Object.assign({}, {
-      dashboard_id:   DashboardId,
-      dashboard_url:  DashboardURL,
       application_id: currentApplicationId,
       application_url:currentApplicationURL,
       customer_id:    currentCustomerId,
