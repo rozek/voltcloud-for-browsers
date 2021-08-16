@@ -244,8 +244,6 @@ var maxStorageKeyLength = 255; // as mentioned in REST API docs
 var maxStorageValueLength = 1048574; // see discussion forum
 /**** internal constants and variables ****/
 var Timeout = 30 * 1000; // request timeout given in ms
-var DashboardURL = 'https://dashboard.voltcloud.io';
-var DashboardId = 'RpYCMN';
 var activeDeveloperId;
 var activeDeveloperAddress;
 var activeDeveloperPassword; // stored for token refresh
@@ -257,6 +255,15 @@ var currentApplicationId;
 var currentApplicationURL;
 var currentCustomerId;
 var currentCustomerAddress;
+/**** focusOnApplication - async for for the sake of systematics only ****/
+function focusOnApplication(ApplicationURL) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            currentApplicationURL = ApplicationURL;
+            return [2 /*return*/];
+        });
+    });
+}
 /**** actOnBehalfOfDeveloper ****/
 function actOnBehalfOfDeveloper(EMailAddress, Password) {
     return __awaiter(this, void 0, void 0, function () {
@@ -265,6 +272,7 @@ function actOnBehalfOfDeveloper(EMailAddress, Password) {
                 case 0:
                     expectEMailAddress('VoltCloud developer email address', EMailAddress);
                     expectPassword('VoltCloud developer password', Password);
+                    assertApplicationFocus();
                     return [4 /*yield*/, loginDeveloper(EMailAddress, Password)];
                 case 1:
                     _a.sent();
@@ -290,109 +298,10 @@ function actOnBehalfOfCustomer(EMailAddress, Password) {
         });
     });
 }
-/**** ApplicationRecords ****/
-function ApplicationRecords() {
-    return __awaiter(this, void 0, void 0, function () {
-        var Response;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    assertDeveloperMandate();
-                    return [4 /*yield*/, ResponseOf('private', 'GET', '{{dashboard_url}}/api/app')];
-                case 1:
-                    Response = _a.sent();
-                    return [2 /*return*/, Response || []];
-            }
-        });
-    });
-}
-/**** focusOnApplication - async for for the sake of systematics only ****/
-function focusOnApplication(ApplicationIdOrURL) {
-    return __awaiter(this, void 0, void 0, function () {
-        var ApplicationRecordList, i, l, ApplicationRecord;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (!(activeDeveloperId != null)) return [3 /*break*/, 2];
-                    expectNonEmptyString('VoltCloud application id', ApplicationIdOrURL);
-                    currentApplicationId = undefined;
-                    currentApplicationURL = undefined;
-                    return [4 /*yield*/, ApplicationRecords()];
-                case 1:
-                    ApplicationRecordList = _a.sent();
-                    for (i = 0, l = ApplicationRecordList.length; i < l; i++) {
-                        ApplicationRecord = ApplicationRecordList[i];
-                        if (ApplicationRecord.id === ApplicationIdOrURL) {
-                            currentApplicationId = ApplicationIdOrURL;
-                            currentApplicationURL = ApplicationRecord.url;
-                            return [2 /*return*/];
-                        }
-                    }
-                    throwError('NoSuchApplication: no application with id ' + quoted(ApplicationIdOrURL) +
-                        ' found for the currently focused developer');
-                    return [3 /*break*/, 3];
-                case 2:
-                    currentApplicationId = undefined;
-                    currentApplicationURL = ApplicationIdOrURL;
-                    _a.label = 3;
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** focusOnApplicationCalled ****/
-function focusOnApplicationCalled(ApplicationName) {
-    return __awaiter(this, void 0, void 0, function () {
-        var ApplicationRecordList, i, l, ApplicationRecord;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectApplicationName('VoltCloud application name', ApplicationName);
-                    //  assertDeveloperMandate()             // will be done by "ApplicationRecords"
-                    currentApplicationId = undefined;
-                    currentApplicationURL = undefined;
-                    return [4 /*yield*/, ApplicationRecords()];
-                case 1:
-                    ApplicationRecordList = _a.sent();
-                    for (i = 0, l = ApplicationRecordList.length; i < l; i++) {
-                        ApplicationRecord = ApplicationRecordList[i];
-                        if (ApplicationRecord.subdomain === ApplicationName) {
-                            currentApplicationId = ApplicationRecord.id;
-                            currentApplicationURL = ApplicationRecord.url;
-                            return [2 /*return*/];
-                        }
-                    }
-                    throwError('NoSuchApplication: no application called ' + quoted(ApplicationName) +
-                        ' found for the currently focused developer');
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** focusOnNewApplication ****/
-function focusOnNewApplication() {
-    return __awaiter(this, void 0, void 0, function () {
-        var Response;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    assertDeveloperMandate();
-                    currentApplicationId = undefined;
-                    currentApplicationURL = undefined;
-                    return [4 /*yield*/, ResponseOf('private', 'POST', '{{dashboard_url}}/api/app', null, {})];
-                case 1:
-                    Response = _a.sent();
-                    currentApplicationId = Response.id;
-                    currentApplicationURL = Response.url;
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
 /**** ApplicationStorage ****/
 function ApplicationStorage() {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, URL_1, Signal_1;
+        var Response, Signal_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -401,8 +310,7 @@ function ApplicationStorage() {
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    URL_1 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'GET', URL_1 + '/api/storage/{{application_id}}')];
+                    return [4 /*yield*/, ResponseOf('private', 'GET', '{{application_url}}/api/storage/{{application_id}}')];
                 case 2:
                     Response = _a.sent();
                     return [3 /*break*/, 4];
@@ -431,7 +339,7 @@ function ApplicationStorage() {
 /**** ApplicationStorageEntry ****/
 function ApplicationStorageEntry(StorageKey) {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, URL_2, Signal_2;
+        var Response, Signal_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -441,8 +349,7 @@ function ApplicationStorageEntry(StorageKey) {
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    URL_2 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'GET', URL_2 + '/api/storage/{{application_id}}/key/{{application_storage_key}}', {
+                    return [4 /*yield*/, ResponseOf('private', 'GET', '{{application_url}}/api/storage/{{application_id}}/key/{{application_storage_key}}', {
                             application_storage_key: StorageKey
                         })];
                 case 2:
@@ -475,237 +382,22 @@ function ApplicationStorageEntry(StorageKey) {
         });
     });
 }
-/**** setApplicationStorageEntryTo ****/
-function setApplicationStorageEntryTo(StorageKey, StorageValue) {
-    return __awaiter(this, void 0, void 0, function () {
-        var Signal_3;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectStorageKey('VoltCloud application storage key', StorageKey);
-                    expectStorageValue('VoltCloud application storage value', StorageValue);
-                    assertDeveloperMandate();
-                    assertApplicationFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, ResponseOf('private', 'PUT', '{{dashboard_url}}/api/storage/{{application_id}}/key/{{application_storage_key}}', {
-                            application_storage_key: StorageKey
-                        }, StorageValue)];
-                case 2:
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_3 = _a.sent();
-                    switch (Signal_3.HTTPStatus) {
-                        case 404:
-                            switch (Signal_3.message) {
-                                case 'Could not route your request.':
-                                case 'App not found.':
-                                    throwError('NoSuchApplication: could not find the given application');
-                            }
-                            break;
-                        case 413: throwError('InvalidArgument: the given storage value is too long');
-                        case 422: switch (Signal_3.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid application id given');
-                            case 'The length of the key parameter must be <=255.':
-                                throwError('InvalidArgument: the given storage key is too long');
-                        }
-                        default: throw Signal_3;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** deleteApplicationStorageEntry ****/
-function deleteApplicationStorageEntry(StorageKey) {
-    return __awaiter(this, void 0, void 0, function () {
-        var Signal_4;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectStorageKey('VoltCloud application storage key', StorageKey);
-                    assertDeveloperMandate();
-                    assertApplicationFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, ResponseOf('private', 'DELETE', '{{dashboard_url}}/api/storage/{{application_id}}/key/{{application_storage_key}}', {
-                            application_storage_key: StorageKey
-                        })];
-                case 2:
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_4 = _a.sent();
-                    switch (Signal_4.HTTPStatus) {
-                        case 404:
-                            switch (Signal_4.message) {
-                                case 'Could not route your request.':
-                                    throwError('NoSuchApplication: could not find the given application or storage key');
-                                case 'App not found.':
-                                    throwError('NoSuchApplication: could not find the given application');
-                                case 'Key does not exist.':
-                                    return [2 /*return*/];
-                            }
-                            break;
-                        case 422: switch (Signal_4.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid application id given');
-                            case 'The length of the key parameter must be <=255.':
-                                throwError('InvalidArgument: the given storage key is too long');
-                        }
-                        default: throw Signal_4;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** clearApplicationStorage ****/
-function clearApplicationStorage() {
-    return __awaiter(this, void 0, void 0, function () {
-        var Signal_5;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    assertDeveloperMandate();
-                    assertApplicationFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, ResponseOf('private', 'DELETE', '{{dashboard_url}}/api/storage/{{application_id}}')];
-                case 2:
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_5 = _a.sent();
-                    switch (Signal_5.HTTPStatus) {
-                        case 404:
-                            switch (Signal_5.message) {
-                                case 'Could not route your request.':
-                                case 'App not found.':
-                                    throwError('NoSuchApplication: could not find the given application');
-                            }
-                            break;
-                        case 422: switch (Signal_5.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid application id given');
-                        }
-                        default: throw Signal_5;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** CustomerRecords ****/
-function CustomerRecords() {
-    return __awaiter(this, void 0, void 0, function () {
-        var Response, Signal_6;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    assertDeveloperMandate();
-                    assertApplicationFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, ResponseOf('private', 'GET', '{{dashboard_url}}/api/app/{{application_id}}/users')];
-                case 2:
-                    Response = _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_6 = _a.sent();
-                    switch (Signal_6.HTTPStatus) {
-                        case 404:
-                            switch (Signal_6.message) {
-                                case 'Could not route your request.':
-                                case 'App not found.':
-                                    throwError('NoSuchApplication: could not find the given application');
-                            }
-                            break;
-                        case 422: switch (Signal_6.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid application id given');
-                        }
-                        default: throw Signal_6;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/, Response || []];
-            }
-        });
-    });
-}
 /**** focusOnCustomer - async for for the sake of systematics only ****/
 function focusOnCustomer(CustomerId) {
     return __awaiter(this, void 0, void 0, function () {
-        var CustomerRecordList, i, l, CustomerRecord_1;
         return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectNonEmptyString('VoltCloud customer id', CustomerId);
-                    assertDeveloperMandate();
-                    assertApplicationFocus();
-                    currentCustomerId = undefined;
-                    currentCustomerAddress = undefined;
-                    return [4 /*yield*/, CustomerRecords()];
-                case 1:
-                    CustomerRecordList = _a.sent();
-                    for (i = 0, l = CustomerRecordList.length; i < l; i++) {
-                        CustomerRecord_1 = CustomerRecordList[i];
-                        if (CustomerRecord_1.id === CustomerId) {
-                            currentCustomerId = CustomerId;
-                            currentCustomerAddress = CustomerRecord_1.email;
-                            return [2 /*return*/];
-                        }
-                    }
-                    throwError('NoSuchCustomer: no customer with id ' + quoted(CustomerId) +
-                        ' found for the currently focused application');
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** focusOnCustomerWithAddress ****/
-function focusOnCustomerWithAddress(EMailAddress) {
-    return __awaiter(this, void 0, void 0, function () {
-        var CustomerRecordList, i, l, CustomerRecord_2;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectEMailAddress('VoltCloud customer email address', EMailAddress);
-                    assertDeveloperMandate();
-                    assertApplicationFocus();
-                    currentCustomerId = undefined;
-                    currentCustomerAddress = undefined;
-                    return [4 /*yield*/, CustomerRecords()];
-                case 1:
-                    CustomerRecordList = _a.sent();
-                    for (i = 0, l = CustomerRecordList.length; i < l; i++) {
-                        CustomerRecord_2 = CustomerRecordList[i];
-                        if (CustomerRecord_2.email === EMailAddress) {
-                            currentCustomerId = CustomerRecord_2.id;
-                            currentCustomerAddress = EMailAddress;
-                            return [2 /*return*/];
-                        }
-                    }
-                    throwError('NoSuchCustomer: no customer with email address ' + quoted(EMailAddress) +
-                        ' found for the currently focused application');
-                    return [2 /*return*/];
-            }
+            expectNonEmptyString('VoltCloud customer id', CustomerId);
+            assertDeveloperMandate();
+            assertApplicationFocus();
+            currentCustomerId = CustomerId; // no more validations possible right now
+            return [2 /*return*/];
         });
     });
 }
 /**** focusOnNewCustomer ****/
 function focusOnNewCustomer(EMailAddress, Password) {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, Signal_7;
+        var Response, Signal_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -725,20 +417,20 @@ function focusOnNewCustomer(EMailAddress, Password) {
                     Response = _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_7 = _a.sent();
-                    switch (Signal_7.HTTPStatus) {
+                    Signal_3 = _a.sent();
+                    switch (Signal_3.HTTPStatus) {
                         case 404:
-                            switch (Signal_7.message) {
+                            switch (Signal_3.message) {
                                 case 'Could not route your request.':
                                 case 'App not found.':
                                     throwError('NoSuchApplication: could not find the given application');
                             }
                             break;
-                        case 422: switch (Signal_7.message) {
+                        case 422: switch (Signal_3.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid application id given');
                         }
-                        default: throw Signal_7;
+                        default: throw Signal_3;
                     }
                     return [3 /*break*/, 4];
                 case 4:
@@ -757,7 +449,7 @@ function focusOnNewCustomer(EMailAddress, Password) {
 /**** resendConfirmationEMailToCustomer ****/
 function resendConfirmationEMailToCustomer(EMailAddress) {
     return __awaiter(this, void 0, void 0, function () {
-        var Signal_8;
+        var Signal_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -778,13 +470,13 @@ function resendConfirmationEMailToCustomer(EMailAddress) {
                     _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_8 = _a.sent();
-                    switch (Signal_8.HTTPStatus) {
-                        case 422: switch (Signal_8.message) {
+                    Signal_4 = _a.sent();
+                    switch (Signal_4.HTTPStatus) {
+                        case 422: switch (Signal_4.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid application id given');
                         }
-                        default: throw Signal_8;
+                        default: throw Signal_4;
                     }
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -795,7 +487,7 @@ function resendConfirmationEMailToCustomer(EMailAddress) {
 /**** confirmCustomerUsing ****/
 function confirmCustomerUsing(Token) {
     return __awaiter(this, void 0, void 0, function () {
-        var Signal_9;
+        var Signal_5;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -811,10 +503,10 @@ function confirmCustomerUsing(Token) {
                     _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_9 = _a.sent();
-                    switch (Signal_9.HTTPStatus) {
+                    Signal_5 = _a.sent();
+                    switch (Signal_5.HTTPStatus) {
                         case 401: throwError('BadToken: the given token can not be recognized');
-                        default: throw Signal_9;
+                        default: throw Signal_5;
                     }
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -825,7 +517,7 @@ function confirmCustomerUsing(Token) {
 /**** startPasswordResetForCustomer ****/
 function startPasswordResetForCustomer(EMailAddress) {
     return __awaiter(this, void 0, void 0, function () {
-        var Signal_10;
+        var Signal_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -846,13 +538,13 @@ function startPasswordResetForCustomer(EMailAddress) {
                     _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_10 = _a.sent();
-                    switch (Signal_10.HTTPStatus) {
-                        case 422: switch (Signal_10.message) {
+                    Signal_6 = _a.sent();
+                    switch (Signal_6.HTTPStatus) {
+                        case 422: switch (Signal_6.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid application id given');
                         }
-                        default: throw Signal_10;
+                        default: throw Signal_6;
                     }
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -863,7 +555,7 @@ function startPasswordResetForCustomer(EMailAddress) {
 /**** resetCustomerPasswordUsing ****/
 function resetCustomerPasswordUsing(Token, Password) {
     return __awaiter(this, void 0, void 0, function () {
-        var Signal_11;
+        var Signal_7;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -882,10 +574,10 @@ function resetCustomerPasswordUsing(Token, Password) {
                     _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_11 = _a.sent();
-                    switch (Signal_11.HTTPStatus) {
+                    Signal_7 = _a.sent();
+                    switch (Signal_7.HTTPStatus) {
                         case 401: throwError('BadToken: the given token can not be recognized');
-                        default: throw Signal_11;
+                        default: throw Signal_7;
                     }
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -896,51 +588,33 @@ function resetCustomerPasswordUsing(Token, Password) {
 /**** CustomerRecord ****/
 function CustomerRecord(CustomerId) {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, CustomerRecordList, i, l, CustomerRecord_3, Signal_12;
+        var Response, Signal_8;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     allowNonEmptyString('VoltCloud customer id', CustomerId);
                     assertApplicationFocus();
-                    if (CustomerId == null) {
-                        assertCustomerFocus();
-                        CustomerId = currentCustomerId;
-                    }
-                    if (!(activeCustomerId == null)) return [3 /*break*/, 2];
-                    assertDeveloperMandate();
-                    return [4 /*yield*/, CustomerRecords()];
-                case 1:
-                    CustomerRecordList = _a.sent();
-                    for (i = 0, l = CustomerRecordList.length; i < l; i++) {
-                        CustomerRecord_3 = CustomerRecordList[i];
-                        if (CustomerRecord_3.id = CustomerId) {
-                            Response = CustomerRecord_3;
-                            break;
-                        }
-                    }
-                    return [3 /*break*/, 6];
-                case 2:
                     assertCustomerMandate();
-                    _a.label = 3;
-                case 3:
-                    _a.trys.push([3, 5, , 6]);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
                     return [4 /*yield*/, ResponseOf('private', 'GET', '{{application_url}}/api/user/{{customer_id}}', {
-                            customer_id: CustomerId
+                            customer_id: activeCustomerId
                         })];
-                case 4:
+                case 2:
                     Response = _a.sent();
-                    return [3 /*break*/, 6];
-                case 5:
-                    Signal_12 = _a.sent();
-                    switch (Signal_12.HTTPStatus) {
-                        case 422: switch (Signal_12.message) {
+                    return [3 /*break*/, 4];
+                case 3:
+                    Signal_8 = _a.sent();
+                    switch (Signal_8.HTTPStatus) {
+                        case 422: switch (Signal_8.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid customer id given');
                         }
-                        default: throw Signal_12;
+                        default: throw Signal_8;
                     }
-                    return [3 /*break*/, 6];
-                case 6:
+                    return [3 /*break*/, 4];
+                case 4:
                     if ((Response != null) && (Response.id === CustomerId)) {
                         //    currentCustomerId      = Response.id
                         currentCustomerAddress = Response.email; // might have changed
@@ -960,7 +634,7 @@ function CustomerRecord(CustomerId) {
 /**** changeCustomerEMailAddressTo ****/
 function changeCustomerEMailAddressTo(EMailAddress) {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, Signal_13;
+        var Response, Signal_9;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -978,15 +652,15 @@ function changeCustomerEMailAddressTo(EMailAddress) {
                     Response = _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_13 = _a.sent();
-                    switch (Signal_13.HTTPStatus) {
+                    Signal_9 = _a.sent();
+                    switch (Signal_9.HTTPStatus) {
                         case 404: throwError('NoSuchUser: the given customer does not exist');
                         case 409: throwError('UserExists: the given EMail address is already in use');
-                        case 422: switch (Signal_13.message) {
+                        case 422: switch (Signal_9.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid customer id given');
                         }
-                        default: throw Signal_13;
+                        default: throw Signal_9;
                     }
                     return [3 /*break*/, 4];
                 case 4:
@@ -1008,7 +682,7 @@ function changeCustomerEMailAddressTo(EMailAddress) {
 /**** changeCustomerPasswordTo ****/
 function changeCustomerPasswordTo(Password) {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, Signal_14;
+        var Response, Signal_10;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1030,15 +704,15 @@ function changeCustomerPasswordTo(Password) {
                     Response = _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_14 = _a.sent();
-                    switch (Signal_14.HTTPStatus) {
+                    Signal_10 = _a.sent();
+                    switch (Signal_10.HTTPStatus) {
                         case 403: throwError('ForbiddenOperation: wrong current password given');
                         case 404: throwError('NoSuchUser: the given customer does not exist');
-                        case 422: switch (Signal_14.message) {
+                        case 422: switch (Signal_10.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid customer id given');
                         }
-                        default: throw Signal_14;
+                        default: throw Signal_10;
                     }
                     return [3 /*break*/, 4];
                 case 4:
@@ -1058,7 +732,7 @@ function changeCustomerPasswordTo(Password) {
 /**** updateCustomerRecordBy ****/
 function updateCustomerRecordBy(Settings) {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, Signal_15;
+        var Response, Signal_11;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1074,16 +748,16 @@ function updateCustomerRecordBy(Settings) {
                     Response = _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_15 = _a.sent();
-                    switch (Signal_15.HTTPStatus) {
+                    Signal_11 = _a.sent();
+                    switch (Signal_11.HTTPStatus) {
                         case 403: throwError('ForbiddenOperation: wrong current password given');
                         case 404: throwError('NoSuchUser: the given customer does not exist');
                         case 409: throwError('UserExists: the given EMail address is already in use');
-                        case 422: switch (Signal_15.message) {
+                        case 422: switch (Signal_11.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid customer id given');
                         }
-                        default: throw Signal_15;
+                        default: throw Signal_11;
                     }
                     return [3 /*break*/, 4];
                 case 4:
@@ -1108,7 +782,7 @@ function updateCustomerRecordBy(Settings) {
 /**** deleteCustomer ****/
 function deleteCustomer() {
     return __awaiter(this, void 0, void 0, function () {
-        var URL_3, Signal_16;
+        var Signal_12;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1118,24 +792,23 @@ function deleteCustomer() {
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    URL_3 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'DELETE', URL_3 + '/api/user/{{customer_id}}')];
+                    return [4 /*yield*/, ResponseOf('private', 'DELETE', '{{application_url}}/api/user/{{customer_id}}')];
                 case 2:
                     _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_16 = _a.sent();
-                    switch (Signal_16.HTTPStatus) {
+                    Signal_12 = _a.sent();
+                    switch (Signal_12.HTTPStatus) {
                         case 404:
-                            switch (Signal_16.message) {
+                            switch (Signal_12.message) {
                                 case 'User not found.': return [2 /*return*/];
                             }
                             break;
-                        case 422: switch (Signal_16.message) {
+                        case 422: switch (Signal_12.message) {
                             case 'Could not decode scope.':
                                 throwError('InvalidArgument: invalid user id given');
                         }
-                        default: throw Signal_16;
+                        default: throw Signal_12;
                     }
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -1146,7 +819,7 @@ function deleteCustomer() {
 /**** CustomerStorage ****/
 function CustomerStorage() {
     return __awaiter(this, void 0, void 0, function () {
-        var Response, URL_4, Signal_17;
+        var Response, Signal_13;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1156,10 +829,185 @@ function CustomerStorage() {
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    URL_4 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'GET', URL_4 + '/api/storage/{{customer_id}}')];
+                    return [4 /*yield*/, ResponseOf('private', 'GET', '{{application_url}}/api/storage/{{customer_id}}')];
                 case 2:
                     Response = _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    Signal_13 = _a.sent();
+                    switch (Signal_13.HTTPStatus) {
+                        case 404:
+                            switch (Signal_13.message) {
+                                case 'Could not route your request.':
+                                case 'User not found.':
+                                    throwError('NoSuchCustomer: could not find the given customer');
+                            }
+                            break;
+                        case 422: switch (Signal_13.message) {
+                            case 'Could not decode scope.':
+                                throwError('InvalidArgument: invalid customer id given');
+                        }
+                        default: throw Signal_13;
+                    }
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/, Response || {}];
+            }
+        });
+    });
+}
+/**** CustomerStorageEntry ****/
+function CustomerStorageEntry(StorageKey) {
+    return __awaiter(this, void 0, void 0, function () {
+        var Response, Signal_14;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    expectStorageKey('VoltCloud customer storage key', StorageKey);
+                    assertDeveloperOrCustomerMandate();
+                    assertApplicationFocus();
+                    assertCustomerFocus();
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, ResponseOf('private', 'GET', '{{application_url}}/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
+                            customer_storage_key: StorageKey
+                        })];
+                case 2:
+                    Response = _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    Signal_14 = _a.sent();
+                    switch (Signal_14.HTTPStatus) {
+                        case 404:
+                            switch (Signal_14.message) {
+                                case 'Could not route your request.':
+                                    throwError('NoSuchCustomer: could not find the given customer or storage key');
+                                case 'User not found.':
+                                    throwError('NoSuchCustomer: could not find the given customer');
+                                case 'Key does not exist.':
+                                    return [2 /*return*/, undefined];
+                            }
+                            break;
+                        case 422: switch (Signal_14.message) {
+                            case 'Could not decode scope.':
+                                throwError('InvalidArgument: invalid customer id given');
+                            case 'The length of the key parameter must be <=255.':
+                                throwError('InvalidArgument: the given storage key is too long');
+                        }
+                        default: throw Signal_14;
+                    }
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/, Response];
+            }
+        });
+    });
+}
+/**** setCustomerStorageEntryTo ****/
+function setCustomerStorageEntryTo(StorageKey, StorageValue) {
+    return __awaiter(this, void 0, void 0, function () {
+        var Signal_15;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    expectStorageKey('VoltCloud customer storage key', StorageKey);
+                    expectStorageValue('VoltCloud customer storage value', StorageValue);
+                    assertDeveloperOrCustomerMandate();
+                    assertApplicationFocus();
+                    assertCustomerFocus();
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, ResponseOf('private', 'PUT', '{{application_url}}/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
+                            customer_storage_key: StorageKey
+                        }, StorageValue)];
+                case 2:
+                    _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    Signal_15 = _a.sent();
+                    switch (Signal_15.HTTPStatus) {
+                        case 404:
+                            switch (Signal_15.message) {
+                                case 'Could not route your request.':
+                                case 'User not found.':
+                                    throwError('NoSuchCustomer: could not find the given customer');
+                            }
+                            break;
+                        case 413: throwError('InvalidArgument: the given storage value is too long');
+                        case 422: switch (Signal_15.message) {
+                            case 'Could not decode scope.':
+                                throwError('InvalidArgument: invalid customer id given');
+                            case 'The length of the key parameter must be <=255.':
+                                throwError('InvalidArgument: the given storage key is too long');
+                        }
+                        default: throw Signal_15;
+                    }
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+/**** deleteCustomerStorageEntry ****/
+function deleteCustomerStorageEntry(StorageKey) {
+    return __awaiter(this, void 0, void 0, function () {
+        var Signal_16;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    expectStorageKey('VoltCloud customer storage key', StorageKey);
+                    assertDeveloperOrCustomerMandate();
+                    assertApplicationFocus();
+                    assertCustomerFocus();
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, ResponseOf('private', 'DELETE', '{{application_url}}/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
+                            customer_storage_key: StorageKey
+                        })];
+                case 2:
+                    _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    Signal_16 = _a.sent();
+                    switch (Signal_16.HTTPStatus) {
+                        case 404:
+                            switch (Signal_16.message) {
+                                case 'Could not route your request.':
+                                case 'User not found.':
+                                    throwError('NoSuchCustomer: could not find the given customer');
+                            }
+                            break;
+                        case 422: switch (Signal_16.message) {
+                            case 'Could not decode scope.':
+                                throwError('InvalidArgument: invalid customer id given');
+                            case 'The length of the key parameter must be <=255.':
+                                throwError('InvalidArgument: the given storage key is too long');
+                        }
+                        default: throw Signal_16;
+                    }
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+/**** clearCustomerStorage ****/
+function clearCustomerStorage() {
+    return __awaiter(this, void 0, void 0, function () {
+        var Signal_17;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    assertDeveloperOrCustomerMandate();
+                    assertApplicationFocus();
+                    assertCustomerFocus();
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, ResponseOf('private', 'DELETE', '{{application_url}}/api/storage/{{customer_id}}')];
+                case 2:
+                    _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
                     Signal_17 = _a.sent();
@@ -1176,186 +1024,6 @@ function CustomerStorage() {
                                 throwError('InvalidArgument: invalid customer id given');
                         }
                         default: throw Signal_17;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/, Response || {}];
-            }
-        });
-    });
-}
-/**** CustomerStorageEntry ****/
-function CustomerStorageEntry(StorageKey) {
-    return __awaiter(this, void 0, void 0, function () {
-        var Response, URL_5, Signal_18;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectStorageKey('VoltCloud customer storage key', StorageKey);
-                    assertDeveloperOrCustomerMandate();
-                    assertApplicationFocus();
-                    assertCustomerFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    URL_5 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'GET', URL_5 + '/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
-                            customer_storage_key: StorageKey
-                        })];
-                case 2:
-                    Response = _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_18 = _a.sent();
-                    switch (Signal_18.HTTPStatus) {
-                        case 404:
-                            switch (Signal_18.message) {
-                                case 'Could not route your request.':
-                                    throwError('NoSuchCustomer: could not find the given customer or storage key');
-                                case 'User not found.':
-                                    throwError('NoSuchCustomer: could not find the given customer');
-                                case 'Key does not exist.':
-                                    return [2 /*return*/, undefined];
-                            }
-                            break;
-                        case 422: switch (Signal_18.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid customer id given');
-                            case 'The length of the key parameter must be <=255.':
-                                throwError('InvalidArgument: the given storage key is too long');
-                        }
-                        default: throw Signal_18;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/, Response];
-            }
-        });
-    });
-}
-/**** setCustomerStorageEntryTo ****/
-function setCustomerStorageEntryTo(StorageKey, StorageValue) {
-    return __awaiter(this, void 0, void 0, function () {
-        var URL_6, Signal_19;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectStorageKey('VoltCloud customer storage key', StorageKey);
-                    expectStorageValue('VoltCloud customer storage value', StorageValue);
-                    assertDeveloperOrCustomerMandate();
-                    assertApplicationFocus();
-                    assertCustomerFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    URL_6 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'PUT', URL_6 + '/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
-                            customer_storage_key: StorageKey
-                        }, StorageValue)];
-                case 2:
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_19 = _a.sent();
-                    switch (Signal_19.HTTPStatus) {
-                        case 404:
-                            switch (Signal_19.message) {
-                                case 'Could not route your request.':
-                                case 'User not found.':
-                                    throwError('NoSuchCustomer: could not find the given customer');
-                            }
-                            break;
-                        case 413: throwError('InvalidArgument: the given storage value is too long');
-                        case 422: switch (Signal_19.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid customer id given');
-                            case 'The length of the key parameter must be <=255.':
-                                throwError('InvalidArgument: the given storage key is too long');
-                        }
-                        default: throw Signal_19;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** deleteCustomerStorageEntry ****/
-function deleteCustomerStorageEntry(StorageKey) {
-    return __awaiter(this, void 0, void 0, function () {
-        var URL_7, Signal_20;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    expectStorageKey('VoltCloud customer storage key', StorageKey);
-                    assertDeveloperOrCustomerMandate();
-                    assertApplicationFocus();
-                    assertCustomerFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    URL_7 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'DELETE', URL_7 + '/api/storage/{{customer_id}}/key/{{customer_storage_key}}', {
-                            customer_storage_key: StorageKey
-                        })];
-                case 2:
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_20 = _a.sent();
-                    switch (Signal_20.HTTPStatus) {
-                        case 404:
-                            switch (Signal_20.message) {
-                                case 'Could not route your request.':
-                                case 'User not found.':
-                                    throwError('NoSuchCustomer: could not find the given customer');
-                            }
-                            break;
-                        case 422: switch (Signal_20.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid customer id given');
-                            case 'The length of the key parameter must be <=255.':
-                                throwError('InvalidArgument: the given storage key is too long');
-                        }
-                        default: throw Signal_20;
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-/**** clearCustomerStorage ****/
-function clearCustomerStorage() {
-    return __awaiter(this, void 0, void 0, function () {
-        var URL_8, Signal_21;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    assertDeveloperOrCustomerMandate();
-                    assertApplicationFocus();
-                    assertCustomerFocus();
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    URL_8 = (activeCustomerId == null ? '{{dashboard_url}}' : '{{application_url}}');
-                    return [4 /*yield*/, ResponseOf('private', 'DELETE', URL_8 + '/api/storage/{{customer_id}}')];
-                case 2:
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    Signal_21 = _a.sent();
-                    switch (Signal_21.HTTPStatus) {
-                        case 404:
-                            switch (Signal_21.message) {
-                                case 'Could not route your request.':
-                                case 'User not found.':
-                                    throwError('NoSuchCustomer: could not find the given customer');
-                            }
-                            break;
-                        case 422: switch (Signal_21.message) {
-                            case 'Could not decode scope.':
-                                throwError('InvalidArgument: invalid customer id given');
-                        }
-                        default: throw Signal_21;
                     }
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -1414,16 +1082,16 @@ function assertApplicationFocus() {
     if (currentApplicationURL == null)
         throwError('InvalidState: please focus on a specific VoltCloud application first');
 }
-/**** assertCustomerFocus ****/
+/**** assertCustomerFocus (based on EMail address here) ****/
 function assertCustomerFocus() {
-    if (currentCustomerId == null)
+    if (currentCustomerAddress == null)
         throwError('InvalidState: please focus on a specific VoltCloud application customer first');
 }
 /**** loginDeveloper ****/
 function loginDeveloper(EMailAddress, Password, firstAttempt) {
     if (firstAttempt === void 0) { firstAttempt = true; }
     return __awaiter(this, void 0, void 0, function () {
-        var Response, Signal_22;
+        var Response, Signal_18;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1445,16 +1113,16 @@ function loginDeveloper(EMailAddress, Password, firstAttempt) {
                             grant_type: 'password',
                             username: EMailAddress,
                             password: Password,
-                            scope: DashboardId
+                            scope: currentApplicationId
                         }, firstAttempt)];
                 case 2:
                     Response = _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_22 = _a.sent();
-                    switch (Signal_22.HTTPStatus) {
+                    Signal_18 = _a.sent();
+                    switch (Signal_18.HTTPStatus) {
                         case 401: throwError('LoginFailed: developer could not be logged in');
-                        default: throw Signal_22;
+                        default: throw Signal_18;
                     }
                     return [3 /*break*/, 4];
                 case 4:
@@ -1478,7 +1146,7 @@ function loginDeveloper(EMailAddress, Password, firstAttempt) {
 function loginCustomer(EMailAddress, Password, firstAttempt) {
     if (firstAttempt === void 0) { firstAttempt = true; }
     return __awaiter(this, void 0, void 0, function () {
-        var Response, Signal_23;
+        var Response, Signal_19;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1506,10 +1174,10 @@ function loginCustomer(EMailAddress, Password, firstAttempt) {
                     Response = _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    Signal_23 = _a.sent();
-                    switch (Signal_23.HTTPStatus) {
+                    Signal_19 = _a.sent();
+                    switch (Signal_19.HTTPStatus) {
                         case 401: throwError('LoginFailed: customer could not be logged in');
-                        default: throw Signal_23;
+                        default: throw Signal_19;
                     }
                     return [3 /*break*/, 4];
                 case 4:
@@ -1538,8 +1206,6 @@ function ResponseOf(Mode, Method, URL, Parameters, Data, firstAttempt) {
         var fullParameters, resolvedURL;
         return __generator(this, function (_a) {
             fullParameters = Object.assign({}, {
-                dashboard_id: DashboardId,
-                dashboard_url: DashboardURL,
                 application_id: currentApplicationId,
                 application_url: currentApplicationURL,
                 customer_id: currentCustomerId,
@@ -1720,5 +1386,5 @@ function ValidationError(Details) {
     return namedError('InternalError: ' + Details.message, Details);
 }
 
-export { ApplicationIdPattern, ApplicationNamePattern, ApplicationRecords, ApplicationStorage, ApplicationStorageEntry, CustomerRecord, CustomerRecords, CustomerStorage, CustomerStorageEntry, ValueIsApplicationName, ValueIsPassword, ValueIsStorageKey, ValueIsStorageValue, actOnBehalfOfCustomer, actOnBehalfOfDeveloper, allowApplicationName, allowPassword, allowStorageKey, allowStorageValue, allowedApplicationName, allowedPassword, allowedStorageKey, allowedStorageValue, changeCustomerEMailAddressTo, changeCustomerPasswordTo, clearApplicationStorage, clearCustomerStorage, confirmCustomerUsing, deleteApplicationStorageEntry, deleteCustomer, deleteCustomerStorageEntry, expectApplicationName, expectPassword, expectStorageKey, expectStorageValue, expectedApplicationName, expectedPassword, expectedStorageKey, expectedStorageValue, focusOnApplication, focusOnApplicationCalled, focusOnCustomer, focusOnCustomerWithAddress, focusOnNewApplication, focusOnNewCustomer, maxApplicationNameLength, maxEMailAddressLength, maxNamePartLength, maxStorageKeyLength, maxStorageValueLength, resendConfirmationEMailToCustomer, resetCustomerPasswordUsing, setApplicationStorageEntryTo, setCustomerStorageEntryTo, startPasswordResetForCustomer, updateCustomerRecordBy };
+export { ApplicationIdPattern, ApplicationNamePattern, ApplicationStorage, ApplicationStorageEntry, CustomerRecord, CustomerStorage, CustomerStorageEntry, ValueIsApplicationName, ValueIsPassword, ValueIsStorageKey, ValueIsStorageValue, actOnBehalfOfCustomer, actOnBehalfOfDeveloper, allowApplicationName, allowPassword, allowStorageKey, allowStorageValue, allowedApplicationName, allowedPassword, allowedStorageKey, allowedStorageValue, changeCustomerEMailAddressTo, changeCustomerPasswordTo, clearCustomerStorage, confirmCustomerUsing, deleteCustomer, deleteCustomerStorageEntry, expectApplicationName, expectPassword, expectStorageKey, expectStorageValue, expectedApplicationName, expectedPassword, expectedStorageKey, expectedStorageValue, focusOnApplication, focusOnCustomer, focusOnNewCustomer, maxApplicationNameLength, maxEMailAddressLength, maxNamePartLength, maxStorageKeyLength, maxStorageValueLength, resendConfirmationEMailToCustomer, resetCustomerPasswordUsing, setCustomerStorageEntryTo, startPasswordResetForCustomer, updateCustomerRecordBy };
 //# sourceMappingURL=voltcloud-for-browsers.esm.js.map

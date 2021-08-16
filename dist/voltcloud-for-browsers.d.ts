@@ -7,34 +7,6 @@ export declare const maxNamePartLength = 255;
 export declare const maxStorageKeyLength = 255;
 export declare const maxStorageValueLength = 1048574;
 export declare type VC_ApplicationName = string;
-export declare type VC_ApplicationRecord = {
-    id: string;
-    owner: string;
-    subdomain: string;
-    disabled: boolean;
-    url: string;
-    canonical_domain?: string;
-    confirmation_url?: string;
-    reset_url?: string;
-    last_upload?: string;
-    nice_links: boolean;
-    cors_type: string;
-    cors_domain?: string;
-    frame_type: string;
-    frame_domain?: string;
-};
-export declare type VC_ApplicationUpdate = {
-    subdomain?: string;
-    disabled?: boolean;
-    canonical_domain?: string;
-    confirmation_url?: string;
-    reset_url?: string;
-    nice_links?: boolean;
-    cors_type?: string;
-    cors_domain?: string;
-    frame_type?: string;
-    frame_domain?: string;
-};
 export declare type VC_CustomerRecord = {
     id: string;
     email: VC_EMailAddress;
@@ -62,34 +34,18 @@ export declare type VC_StorageValue = string | undefined;
 export declare type VC_StorageSet = {
     [Key: string]: VC_StorageValue;
 };
+/**** focusOnApplication - async for for the sake of systematics only ****/
+export declare function focusOnApplication(ApplicationURL: string): Promise<void>;
 /**** actOnBehalfOfDeveloper ****/
 export declare function actOnBehalfOfDeveloper(EMailAddress: string, Password: string): Promise<void>;
 /**** actOnBehalfOfCustomer ****/
 export declare function actOnBehalfOfCustomer(EMailAddress: string, Password: string): Promise<void>;
-/**** ApplicationRecords ****/
-export declare function ApplicationRecords(): Promise<VC_ApplicationRecord[]>;
-/**** focusOnApplication - async for for the sake of systematics only ****/
-export declare function focusOnApplication(ApplicationIdOrURL: string): Promise<void>;
-/**** focusOnApplicationCalled ****/
-export declare function focusOnApplicationCalled(ApplicationName: VC_ApplicationName): Promise<void>;
-/**** focusOnNewApplication ****/
-export declare function focusOnNewApplication(): Promise<void>;
 /**** ApplicationStorage ****/
 export declare function ApplicationStorage(): Promise<VC_StorageSet>;
 /**** ApplicationStorageEntry ****/
 export declare function ApplicationStorageEntry(StorageKey: VC_StorageKey): Promise<VC_StorageValue | undefined>;
-/**** setApplicationStorageEntryTo ****/
-export declare function setApplicationStorageEntryTo(StorageKey: VC_StorageKey, StorageValue: VC_StorageValue): Promise<void>;
-/**** deleteApplicationStorageEntry ****/
-export declare function deleteApplicationStorageEntry(StorageKey: VC_StorageKey): Promise<void>;
-/**** clearApplicationStorage ****/
-export declare function clearApplicationStorage(): Promise<void>;
-/**** CustomerRecords ****/
-export declare function CustomerRecords(): Promise<VC_CustomerRecord[]>;
 /**** focusOnCustomer - async for for the sake of systematics only ****/
 export declare function focusOnCustomer(CustomerId: string): Promise<void>;
-/**** focusOnCustomerWithAddress ****/
-export declare function focusOnCustomerWithAddress(EMailAddress: string): Promise<void>;
 /**** focusOnNewCustomer ****/
 export declare function focusOnNewCustomer(EMailAddress: string, Password: string): Promise<void>;
 /**** resendConfirmationEMailToCustomer ****/
