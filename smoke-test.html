@@ -20,7 +20,7 @@
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js"></script>
-  <script src="./dist/voltcloud-for-browsers.js"></script>
+  <script src="https://www.rozek.de/js/voltcloud-for-browsers.js"></script>
  </head>
  <body>
   <h1>"voltcloud-for-browsers" Smoke Test</h1>
@@ -51,8 +51,8 @@
       <td><input id="CustomerAddressInput" type="email"></td>
      </tr>
      <tr>
-      <td>Application ZIP Archive:</td>
-      <td><input id="ArchiveInput" type="file" accept="application/zip"></td>
+      <td>Application Id:</td>
+      <td><input id="ApplicationIdInput" type="text"></td>
      </tr>
     </table>
   </div>
@@ -113,13 +113,9 @@
 
   ;`
     actOnBehalfOfDeveloper, actOnBehalfOfCustomer,
-    ApplicationRecords, CustomerRecords,
-    focusOnApplication, focusOnApplicationCalled, focusOnNewApplication,
-    ApplicationRecord, changeApplicationNameTo, updateApplicationRecordBy,
-      uploadToApplication, deleteApplication,
-    ApplicationStorage, ApplicationStorageEntry, setApplicationStorageEntryTo,
-      deleteApplicationStorageEntry, clearApplicationStorage,
-    focusOnCustomer, focusOnCustomerWithAddress, focusOnNewCustomer,
+    focusOnApplication,
+    ApplicationStorage, ApplicationStorageEntry,
+    focusOnCustomer, focusOnNewCustomer,
     resendConfirmationEMailToCustomer, confirmCustomerUsing,
     startPasswordResetForCustomer, resetCustomerPasswordUsing,
     CustomerRecord, changeCustomerEMailAddressTo, changeCustomerPasswordTo,
@@ -130,20 +126,17 @@
     (FunctionName) => global[FunctionName] = VoltCloud[FunctionName]
   )
 
-  let DeveloperAddress, DeveloperPassword, CustomerAddress
+  let DeveloperAddress, DeveloperPassword, CustomerAddress, ApplicationId
   let currentPhase
   let ZIPArchive, CustomerConfirmationToken, CustomerResetToken
 
-  const ApplicationNamePrefix = 'vfb-smoke-test-'
-
-  let ApplicationName, ApplicationInfo, ApplicationStore, StoreValue
+  let ApplicationStore, StoreValue
   let CustomerId, CustomerPassword, CustomerInfo, CustomerStore
 
-  const currentPhaseKey = 'voltcloud-for-browsers: currentPhase'
-  const DeveloperKey    = 'voltcloud-for-browsers: Developer'
-  const CustomerKey     = 'voltcloud-for-browsers: Customer'
-
-  const emptyApplicationsShouldBeDeleted = false
+  const currentPhaseKey  = 'voltcloud-for-browsers: currentPhase'
+  const DeveloperKey     = 'voltcloud-for-browsers: Developer'
+  const CustomerKey      = 'voltcloud-for-browsers: Customer'
+  const ApplicationIdKey = 'voltcloud-for-browsers: ApplicationId'
 
   const expect = chai.expect
 
@@ -171,8 +164,9 @@
 
 /**** restore settings ****/
 
-  DeveloperAddress = (localStorage[DeveloperKey] || '').trim()
-  CustomerAddress  = (localStorage[CustomerKey]  || '').trim()
+  DeveloperAddress = (localStorage[DeveloperKey]     || '').trim()
+  CustomerAddress  = (localStorage[CustomerKey]      || '').trim()
+  ApplicationId    = (localStorage[ApplicationIdKey] || '').trim()
 
 /**** display required sections ****/
 
@@ -183,14 +177,16 @@
       ElementWithId('Phase_1').style.display = 'block'
         ElementWithId('DeveloperAddressInput').value = DeveloperAddress
         ElementWithId('CustomerAddressInput') .value = CustomerAddress
+        ElementWithId('ApplicationIdInput')   .value = ApplicationId
       ElementWithId('Preparation') .style.display = 'block'
       ElementWithId('StartSection').style.display = 'block'
       break
     case 2:
       ElementWithId('Phase_2').style.display = 'block'
-      if ((DeveloperAddress === '') || (CustomerAddress === '')) {
+      if ((DeveloperAddress === '') || (CustomerAddress === '') || (ApplicationId === '')) {
         ElementWithId('DeveloperAddressInput').value = DeveloperAddress
         ElementWithId('CustomerAddressInput') .value = CustomerAddress
+        ElementWithId('ApplicationIdInput')   .value = ApplicationId
 
         ElementWithId('Preparation').style.display = 'block'
       } else {
@@ -215,10 +211,10 @@
   ElementWithId('DeveloperPasswordInput') .addEventListener('input', updateState1)
   ElementWithId('DeveloperPasswordInput2').addEventListener('input', updateState2)
   ElementWithId('CustomerAddressInput')   .addEventListener('input', updateState1)
-  ElementWithId('ArchiveInput')           .addEventListener('input', updateState1)
+  ElementWithId('ApplicationIdInput')     .addEventListener('input', updateState1)
 
-  ElementWithId('StartButton')   .addEventListener('click', runTests)
-  ElementWithId('ContinueButton').addEventListener('click', runTests)
+  ElementWithId('StartButton')   .addEventListener('click', performTests)
+  ElementWithId('ContinueButton').addEventListener('click', performTests)
 
   ElementWithId('RestartButton').addEventListener('click', () => {
     localStorage[currentPhaseKey] = '1'
@@ -235,7 +231,7 @@
       (ElementWithId('DeveloperAddressInput') .value.trim() === '') ||
       (ElementWithId('DeveloperPasswordInput').value.trim() === '') ||
       (ElementWithId('CustomerAddressInput')  .value.trim() === '') ||
-      (ElementWithId('ArchiveInput')          .files.length === 0)
+      (ElementWithId('ApplicationIdInput')    .value.trim() === '')
     ) {
       TargetButton.setAttribute('disabled','disabled')
     } else {
@@ -266,38 +262,14 @@
     }
   }
 
-/**** load ZIP archive ****/
+/**** perform tests ****/
 
-  function loadArchive () {
-    let File = ElementWithId('ArchiveInput').files[0]
-    return new Promise((resolve, reject) => {
-      let ArchiveReader = new FileReader()
-        ArchiveReader.onabort = function () {
-          return reject('archive loading has been aborted')
-        }
-
-        ArchiveReader.onerror = function () {
-          return reject(
-            'archive could not be loaded, reason ' + ArchiveReader.error
-          )
-        }
-
-        ArchiveReader.onload = function (Event) {
-          ZIPArchive = Event.target.result
-          return resolve(undefined)
-        }
-      ArchiveReader.readAsArrayBuffer(File)
-    })
-  }
-
-/**** run tests ****/
-
-  async function runTests () {
+  function performTests () {
     ElementWithId('DeveloperAddressInput')  .setAttribute('disabled','disabled')
     ElementWithId('DeveloperPasswordInput') .setAttribute('disabled','disabled')
     ElementWithId('DeveloperPasswordInput2').setAttribute('disabled','disabled')
     ElementWithId('CustomerAddressInput')   .setAttribute('disabled','disabled')
-    ElementWithId('ArchiveInput')           .setAttribute('disabled','disabled')
+    ElementWithId('ApplicationIdInput')     .setAttribute('disabled','disabled')
 
     ElementWithId('StartButton')   .setAttribute('disabled','disabled')
     ElementWithId('ContinueButton').setAttribute('disabled','disabled')
@@ -307,18 +279,29 @@
 
     if (
       (currentPhase === 1) ||
-      (currentPhase === 2) && ((DeveloperAddress === '') || (CustomerAddress === ''))
+      (currentPhase === 2) && (
+        (DeveloperAddress === '') || (CustomerAddress === '') || (ApplicationId === '')
+      )
     ) {
-      localStorage[DeveloperKey] = ElementWithId('DeveloperAddressInput').value.trim()
-      localStorage[CustomerKey]  = ElementWithId('CustomerAddressInput') .value.trim()
+      DeveloperAddress  = ElementWithId('DeveloperAddressInput') .value.trim()
+      DeveloperPassword = ElementWithId('DeveloperPasswordInput').value
+      CustomerAddress   = ElementWithId('CustomerAddressInput')  .value.trim()
+      ApplicationId     = ElementWithId('ApplicationIdInput')    .value.trim()
 
-      loadArchive().then(runTests).catch((Error) => console.log(Error))
+      localStorage[DeveloperKey]     = DeveloperAddress
+      localStorage[CustomerKey]      = CustomerAddress
+      localStorage[ApplicationIdKey] = ApplicationId
+
+      runTests()
     } else {
+      DeveloperPassword = ElementWithId('DeveloperPasswordInput2').value
       runTests()
     }
+  }
 
-  /**** let's start ****/
+/**** run tests ****/
 
+  async function runTests () {
     await runCommonTests()
 
   /**** phase-specific tests ****/
@@ -337,48 +320,9 @@
     console.log('acting on behalf of developer "' + DeveloperAddress + '"')
     await actOnBehalfOfDeveloper(DeveloperAddress,DeveloperPassword)
 
-  /**** scan list of existing applications ****/
+  /**** focus on this application ****/
 
-    let ApplicationRecordList = await ApplicationRecords()
-    expect(ApplicationRecordList).to.be.an('array')
-
-    ApplicationRecordList.forEach(async (ApplicationRecord) => {
-      if (ApplicationRecord.subdomain.startsWith(ApplicationNamePrefix)) {
-        ApplicationName = ApplicationRecord.subdomain
-        return
-      }
-
-      if (emptyApplicationsShouldBeDeleted && (ApplicationRecord.last_upload == null)) {
-        console.log('- deleting empty application "' + ApplicationRecord.subdomain + '"')
-        await deleteApplication(ApplicationRecord.id)
-        return
-      }
-    })
-
-  /**** create new or focus on existing application ****/
-
-    if (ApplicationName == null) {
-      ApplicationName = ApplicationNamePrefix + Math.round(Math.random()*999999999999)
-
-      console.log('- creating new smoke test application "' + ApplicationName + '"')
-
-      await focusOnNewApplication()
-      await changeApplicationNameTo(ApplicationName)
-
-      ApplicationInfo = await ApplicationRecord()
-      expect(ApplicationInfo).to.be.an('object')
-      expect(ApplicationInfo.subdomain).to.equal(ApplicationName)
-
-    /**** just to test "focusOnApplication" as well ****/
-
-      await focusOnApplication(ApplicationInfo.id)
-
-      ApplicationInfo = await ApplicationRecord()
-      expect(ApplicationInfo).to.be.an('object')
-      expect(ApplicationInfo.subdomain).to.equal(ApplicationName)
-    } else {
-      await focusOnApplicationCalled(ApplicationName)
-    }
+    await focusOnApplication(document.location.origin, ApplicationId)
 
 
   }
@@ -386,37 +330,6 @@
 /**** Phase 1 tests ****/
 
   async function runPhase1Tests () {
-  /**** define (or keep) user confirmation and password reset URLs ****/
-
-    ApplicationInfo = await ApplicationRecord()
-    if (
-      (ApplicationInfo.confirmation_url == null) ||
-      (ApplicationInfo.reset_url        == null)
-    ) {
-      console.log('- setting user confirmation and password reset URLs')
-
-      await updateApplicationRecordBy({
-        confirmation_url:'/#/confirm/{{token}}',
-        reset_url:       '/#/reset/{{token}}'
-      })
-
-      ApplicationInfo = await ApplicationRecord()
-      expect(ApplicationInfo).to.be.an('object')
-      expect(ApplicationInfo.confirmation_url).to.equal('/#/confirm/{{token}}')
-      expect(ApplicationInfo.reset_url)       .to.equal('/#/reset/{{token}}')
-    } else {
-      console.log('- user confirmation and password reset URLs are already set')
-    }
-
-  /**** clear ApplicationStorage ****/
-
-    console.log('- clearing application storage')
-
-    await clearApplicationStorage()
-
-    ApplicationStore = await ApplicationStorage()
-    expect(KeysOf(ApplicationStore).length).to.equal(0)
-
   /**** test ApplicationStorage management ****/
 
     console.log('- testing application storage management (for developer)')
@@ -424,69 +337,11 @@
     StoreValue = await ApplicationStorageEntry('missing-key')
     expect(StoreValue).not.to.exist
 
-
-    await setApplicationStorageEntryTo('key-1','value-1')
-
     StoreValue = await ApplicationStorageEntry('key-1')
     expect(StoreValue).to.equal('value-1')
 
     ApplicationStore = await ApplicationStorage()
     expect(KeysOf(ApplicationStore)).to.have.members(['key-1'])
-
-
-    await setApplicationStorageEntryTo('key-1','value-2')
-
-    StoreValue = await ApplicationStorageEntry('key-1')
-    expect(StoreValue).to.equal('value-2')
-
-    ApplicationStore = await ApplicationStorage()
-    expect(KeysOf(ApplicationStore)).to.have.members(['key-1'])
-
-
-    await deleteApplicationStorageEntry('missing-key')
-
-
-    await deleteApplicationStorageEntry('key-1')
-
-    StoreValue = await ApplicationStorageEntry('key-1')
-    expect(StoreValue).not.to.exist
-
-    ApplicationStore = await ApplicationStorage()
-    expect(KeysOf(ApplicationStore).length).to.equal(0)
-
-  /**** test "clearApplicationStorage" explicitly ****/
-
-    await setApplicationStorageEntryTo('key-1','value-1')
-
-    await clearApplicationStorage()
-
-    ApplicationStore = await ApplicationStorage()
-    expect(KeysOf(ApplicationStore).length).to.equal(0)
-
-  /**** prepare for later ****/
-
-    await setApplicationStorageEntryTo('key-1','value-1')
-
-  /**** test file upload ****/
-
-    console.log('- uploading file archive (' + ZIPArchive.length + ' bytes)')
-    await uploadToApplication(ZIPArchive)
-
-    ApplicationInfo = await ApplicationRecord()
-    expect(ApplicationInfo).to.be.an('object')
-    expect(ApplicationInfo.last_upload).to.exist
-
-  /**** delete existing customers ****/
-
-    let CustomerRecordList = await CustomerRecords()
-    expect(CustomerRecordList).to.be.an('array')
-
-    CustomerRecordList.forEach(async (CustomerRecord) => {
-      console.log('- deleting customer "' + CustomerRecord.email + '"')
-
-      await focusOnCustomer(CustomerRecord.id)
-      await deleteCustomer()
-    })
 
   /**** create new customer ****/
 
@@ -706,17 +561,7 @@
     console.log('- deleting customer')
     await deleteCustomer()
 
-  /**** let's continue with a developer mandate (again) ****/
 
-    console.log('acting on behalf of developer "' + DeveloperAddress + '" again')
-
-    await actOnBehalfOfDeveloper(DeveloperAddress,DeveloperPassword)
-    await focusOnApplicationCalled(ApplicationName)
-
-  /**** deleteApplication ****/
-
-    console.log('- deleting smoke test application')
-    await deleteApplication()
     ElementWithId('Phase_4_Summary').style.display = 'block'
   }
 
