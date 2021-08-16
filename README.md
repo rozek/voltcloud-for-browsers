@@ -93,13 +93,9 @@ If you prefer, you may simply copy the following statement into your source code
 ```
 import {
   actOnBehalfOfDeveloper, actOnBehalfOfCustomer,
-  ApplicationRecords, CustomerRecords,
-  focusOnApplication, focusOnApplicationCalled, focusOnNewApplication,
-  ApplicationRecord, changeApplicationNameTo, updateApplicationRecordBy,
-    uploadToApplication, deleteApplication,
-  ApplicationStorage, ApplicationStorageEntry, setApplicationStorageEntryTo,
-    deleteApplicationStorageEntry, clearApplicationStorage,
-  focusOnCustomer, focusOnCustomerWithAddress, focusOnNewCustomer,
+  focusOnApplication,
+  ApplicationStorage, ApplicationStorageEntry,
+  focusOnCustomer, focusOnNewCustomer,
   resendConfirmationEMailToCustomer, confirmCustomerUsing,
   startPasswordResetForCustomer, resetCustomerPasswordUsing,
   CustomerRecord, changeCustomerEMailAddressTo, changeCustomerPasswordTo,
@@ -115,7 +111,7 @@ For Svelte, it is recommended to import the package in a module context. From th
 
 ```
 <script context="module">
-  import { actOnBehalfOfDeveloper, ApplicationRecords } from 'javascript-interface-library'
+  import { actOnBehalfOfDeveloper, ApplicationRecords } from 'voltcloud-for-browsers'
 </script>
 
 <script>
@@ -143,7 +139,6 @@ Let's assume that you already "required" or "imported" (or simply loaded) the mo
 
 `voltcloud-for-browsers` exports the following constants:
 
-* **`const ApplicationIdPattern = /^[a-zA-Z0-9]{6,}$/`**<br>defines the regular expression pattern to which each VoltCloud application id must match
 * **`const ApplicationNamePattern = /^([a-z0-9]|[a-z0-9][-a-z0-9]*[a-z0-9])$/`**<br>defines the regular expression pattern to which each VoltCloud application name must match
 * **`const maxApplicationNameLength = 63`**<br>defines the maximum length of any VoltCloud application name
 * **`const maxEMailAddressLength = 255`**<br>defines the maximum length of the email address used to identify developers and customers
@@ -156,8 +151,6 @@ Let's assume that you already "required" or "imported" (or simply loaded) the mo
 TypeScript programmers may import the following types in order to benefit from static type checking (JavaScript programmers may simply skip this section):
 
 * **`type VC_ApplicationName = string`**<br>application names are strings with 1...`maxApplicationNameLength` characters matching the regular expression `ApplicationNamePattern`
-* **`type VC_ApplicationRecord = {id:string, owner:string, subdomain:string, disabled:boolean, url:string, canonical_domain?:string, confirmation_url?:string, reset_url?:string, last_upload?:string, nice_links:boolean, cors_type:string, cors_domain?:string, frame_type:string, frame_domain?:string}`**<br>instances of this type are returned when details of an existing application are requested
-* **`type VC_ApplicationUpdate = {subdomain?:string, disabled?:boolean, canonical_domain?:string, confirmation_url?:string, reset_url?:string, nice_links?:boolean, cors_type?:string, cors_domain?:string, frame_type?:string, frame_domain?:string}`**<br>instances of this type are used when specific details of an existing application shall be changed
 * **`type VC_CustomerRecord = { id:string, email:VC_EMailAddress, first_name?:VC_NamePart, last_name?:VC_NamePart, confirmed:boolean, admin:boolean, meta?:any }`**<br>instances of this type are returned when details of an already registered user are requested
 * **`type VC_CustomerUpdate = { email?:VC_EMailAddress, password?:{ old:string, new:string, confirmation:string }, first_name?:string, last_name?:string }`**<br>instances of this type are used when specific details of an already registered user shall be changed
 * **`type VC_EMailAddress = string`**<br>the EMail addresses used to identify developers and customers are strings with up to `maxEMailAddressLength` characters
@@ -180,20 +173,19 @@ TypeScript programmers may import the following types in order to benefit from s
 
 ### exported VoltCloud Functions not requiring any Mandate ###
 
-* **`async function focusOnApplication (ApplicationIdOrURL:string):Promise<void>`**<br>sets the application given by `ApplicationIdOrURL` as the target for all following application-specific requests. When used without any mandate, `ApplicationIdOrURL` must contain the complete URL of the requested application - when used with a developer mandate, `ApplicationIdOrURL` must contain the requested application's internal id. The function will fail, if no such application exists<br>&nbsp;<br>
+* **`async function focusOnApplication (ApplicationURL:string, ApplicationId:string):Promise<void>`**<br>sets the application given by `ApplicationURL` and `ApplicationId` as the target for all following application-specific requests. Both `ApplicationURL` and `ApplicationId` must belong to the same (existing) VoltCloud application. Because of CORS restrictions, the current document's URL must start with the same URL given by `ApplicationURL`, or subsequent requests will fail<br>&nbsp;<br>
 * **`async function focusOnNewCustomer (EMailAddress:string, Password:string):Promise<void>`**<br>registers a new customer with the email address given by `EMailAddress`, configures the given `Password` as the initial password and sets him/her as the target for all following (customer-specific) requests. If configured for the current target application, this request will automatically send a customer confirmation email to the given address<br>&nbsp;<br>
-* **`async function resendConfirmationEMailToCustomer (EMailAddress?:string):Promise<void>`**<br>if configured for the current target application, this function will send another customer confirmation email to the address given by `EMailAddress` - if no such address is given, that email is sent to the current target customer
+* **`async function resendConfirmationEMailToCustomer (EMailAddress:string):Promise<void>`**<br>if configured for the current target application, this function will send another customer confirmation email to the address given by `EMailAddress`
 * **`async function confirmCustomerUsing (Token:string):Promise<void>`**<br>confirms the email address given for a newly registered customer by providing the `Token` sent as part of a customer confirmation email. This token internally also specifies the customer to whom it was sent<br>&nbsp;<br>
-* **`async function startPasswordResetForCustomer (EMailAddress?:string):Promise<void>`**<br>if configured for the current target application, this function will send a password reset email to the address given by `EMailAddress` - if no such address is given, that email is sent to the current target customer
+* **`async function startPasswordResetForCustomer (EMailAddress:string):Promise<void>`**<br>if configured for the current target application, this function will send a password reset email to the address given by `EMailAddress`
 * **`async function resetCustomerPasswordUsing (Token:string, Password:string):Promise<void>`**<br>sets `Password` as the new password for a customer by providing the `Token` sent as part of a password reset email. This token internally also specifies the customer to whom it was sent
 
 ### exported VoltCloud Functions requiring either a Developer or a Customer Mandate ###
 
-* **`async function actOnBehalfOfDeveloper (EMailAddress:string, Password:string):Promise<void>`**<br>uses the given `EMailAddress` and `Password` to request an "access token" from VoltCloud, which is then used to authorize any non-public VoltCloud operation that is intended for application developers only. Note: `EMailAddress` and `Password` are kept in memory while the process is running in order to automatically refresh the token upon expiry
-* **`async function actOnBehalfOfCustomer (EMailAddress:string, Password:string):Promise<void>`**<br>uses the given `EMailAddress` and `Password` to request an "access token" from VoltCloud, which is then used to authorize any non-public VoltCloud operation that is intended for application customers only. This request requires to focus on an application first, since customers are application-specific. Note: `EMailAddress` and `Password` are kept in memory while the process is running in order to automatically refresh the token upon expiry<br>&nbsp;<br>
+* **`async function actOnBehalfOfDeveloper (EMailAddress:string, Password:string):Promise<void>`**<br>uses the given `EMailAddress` and `Password` to request an "access token" from VoltCloud, which is then used to authorize any non-public VoltCloud operation. Note: `EMailAddress` and `Password` are kept in memory while the process is running in order to automatically refresh the token upon expiry
+* **`async function actOnBehalfOfCustomer (EMailAddress:string, Password:string):Promise<void>`**<br>uses the given `EMailAddress` and `Password` to request an "access token" from VoltCloud, which is then used to authorize any non-public VoltCloud operation. This request requires to focus on an application first, since customers are application-specific. Note: `EMailAddress` and `Password` are kept in memory while the process is running in order to automatically refresh the token upon expiry<br>&nbsp;<br>
 * **`async function ApplicationStorage ():Promise<VC_StorageSet>`**<br>retrieves the complete key-value store for the current target application and delivers it as a JavaScript object
 * **`async function ApplicationStorageEntry (StorageKey:VC_StorageKey):Promise<VC_StorageValue | undefined>`**<br>retrieves an entry (given by `StorageKey`) from the key-value store for the current target application and returns its value (as a JavaScript string) - or `undefined` if the requested entry does not exist<br>&nbsp;<br>
-* **`async function CustomerRecord (CustomerId?:string):Promise<VC_CustomerRecord | undefined>`**<br>retrieves a record with all current VoltCloud settings for the customer given by `CustomerId` - if no such id is given, the current target customer's record will be retrieved. If no such customer exists (for the current target application), `undefined` is returned instead. See above for the internals of the delivered object
 * **`async function deleteCustomer ():Promise<void>`**<br>deletes the current target customer<br>&nbsp;<br>
 * **`async function CustomerStorage ():Promise<VC_StorageSet>`**<br>retrieves the complete key-value store for the current target customer and delivers it as a JavaScript object
 * **`async function CustomerStorageEntry (StorageKey:VC_StorageKey):Promise<VC_StorageValue | undefined>`**<br>retrieves an entry (given by `StorageKey`) from the key-value store for the current target customer and returns its value (as a JavaScript string) - or `undefined` if the requested entry does not exist
@@ -203,25 +195,13 @@ TypeScript programmers may import the following types in order to benefit from s
 
 ### exported VoltCloud Functions requiring a Developer Mandate ###
 
-* **`async function ApplicationRecords ():Promise<VC_ApplicationRecord[]>`**<br>retrieves a (potentially empty) list with the details of all applications created by the currently configured developer. See above for the internals of the delivered list items<br>&nbsp;<br>
-* **`async function focusOnApplicationCalled (ApplicationName:VC_ApplicationName):Promise<void>`**<br>sets the application given by `ApplicationName` as the target for all following application-specific requests. The function will fail, if no such application exists for the currently configured developer
-* **`async function focusOnNewApplication ():Promise<void>`**<br>creates a new application for the currently configured developer and sets it as the target for all following application-specific requests<br>&nbsp;<br>
-* **`async function ApplicationRecord ():Promise<VC_ApplicationRecord | undefined>`**<br>retrieves a record with details of the current target application. See above for the internals of the delivered object
-* **`async function changeApplicationNameTo (ApplicationName:VC_ApplicationName):Promise<void>`**<br>renames the current target application to `ApplicationName`
-* **`async function updateApplicationRecordBy (Settings:VC_ApplicationUpdate):Promise<void>`**<br>updates the details given by `Settings` in the current target application. See above for the internals of the `Settings` object
-* **`async function uploadToApplication (ZIPArchive:Buffer):Promise<void>`**<br>uploads the ZIP archive given by `ZIPArchive` to the current target application
-* **`async function deleteApplication (ApplicationId:string):Promise<void>`**<br>deletes the currently focused application<br>&nbsp;<br>
-* **`async function setApplicationStorageEntryTo (StorageKey:VC_StorageKey, StorageValue:VC_StorageValue):Promise<void>`**<br>sets the entry given by `StorageKey` in the key-value store for the current target application to the value given by `StorageValue` (which must be a JavaScript string). If the entry does not yet exist, it will be created
-* **`async function deleteApplicationStorageEntry (StorageKey:VC_StorageKey):Promise<void>`**<br>removes the entry given by `StorageKey` from the key-value store for the current target application. It is ok to "delete" a non-existing entry (this function is "idempotent")
-* **`async function clearApplicationStorage ():Promise<void>`**<br>removes all entries from the key-value store for the current target application. It is ok to "clear" an empty store (this function is "idempotent")<br>&nbsp;<br>
-* **`async function CustomerRecords ():Promise<VC_CustomerRecord[]>`**<br>retrieves a (potentially empty) list with the details of all customers who registered for the current target application. See above for the internals of the delivered list items<br>&nbsp;<br>
 * **`async function focusOnCustomer (CustomerId:string):Promise<void>`**<br>sets the customer given by `CustomerId` as the target for all following (customer-specific) requests
-* **`async function focusOnCustomerWithAddress (EMailAddress:string):Promise<void>`**<br>sets the customer with the email address given by `EMailAddress` as the target for all following (customer-specific) requests
 
 Note: additionally, developers may also call any functions mentioned in the previous sections, which do either not require any mandate or may be used with developer or customer mandates
 
 ### exported VoltCloud Functions requiring a Customer Mandate ###
 
+* **`async function CustomerRecord ():Promise<VC_CustomerRecord>`**<br>retrieves a record with all current VoltCloud settings for the current target customer. See above for the internals of the delivered object
 * **`async function changeCustomerEMailAddressTo (EMailAddress:string):Promise<void>`**<br>changes the EMail address of the currently configured customer to `EMailAddress`. No customer with that address must currently be registered for the current target application or the function will fail
 * **`async function changeCustomerPasswordTo (Password:string):Promise<void>`**<br>changes the password of the currently configured customer to `Password`
 * **`async function updateCustomerRecordBy (Settings:VC_CustomerUpdate):Promise<void>`**<br>updates the settings for the current target customer given by `Settings`. See above for the internals of the Settings object
