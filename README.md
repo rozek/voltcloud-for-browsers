@@ -22,7 +22,7 @@ If desired, VoltCloud applications may support their own "users" (in this docume
 
 Users may register themselves for a VoltCloud application by providing their EMail address and a password (which they will need later to log into the application). Upon registration, a "confirmation mail" will be sent to the given address that includes a special link to the application which, when clicked, will allow the application to confirm the given user. Should the confirmation message get lost, it may be resent upon request.
 
-Should a customer forget his/ger password, there is also the possibility to initiate a "password reset" process. If triggered, a "password reset email" with a special link to the application will be sent to the customer which, when clicked, should allow the customer to change his/her password. A password reset may be triggered as often as needed.
+Should a customer forget his/her password, there is also the possibility to initiate a "password reset" process. If triggered, a "password reset email" with a special link to the application will be sent to the customer which, when clicked, should allow the customer to change his/her password. A password reset may be triggered as often as needed.
 
 > special note for german customers: for an unknown reason, customer confirmation or password reset message take quite a while (approx. 2 hours) to reach mailboxes hosted by GMX and Web.de - if you need s.th. to test with, try address at Mail.de, those seem to be much faster right now.
 
