@@ -50,9 +50,9 @@ Mandates may be changed as often as needed and allow `voltcloud-for-browsers` to
 
 ### Focusing ###
 
-Because `voltcloud-for-browsers` is most often used for a specific VoltCloud application and/or for a specific customer only, it is possible to "focus" on that application or customer using `focusOnApplication`, `focusOnApplicationCalled`, `focusOnCustomer` or `focusOnCustomerWithAddress`, resp. If a new application is created (using `focusOnNewApplication`) or a new customer registered (using `focusOnNewCustomer`), that one is automatically focused. Additionally, running on behalf of a customer also automatically focuses that customer.
+Because `voltcloud-for-browsers` may only be used for a specific VoltCloud application (due to CORS restrictions), the library has to be told to "focus" on that application using `focusOnApplication`. When running with a developer mandate, it is also possible to "focus" on a specific customer (using `focusOnCustomer`) - when running with a customer mandate or if a new customer is registered (using `focusOnNewCustomer`), that customer is "focused" automatically.
 
-Normally, all application- or customer-specific functions require such a focus. Only `resendConfirmationEMailToCustomer`, `confirmCustomerUsing`, `startPasswordResetForCustomer`, `resetCustomerPasswordUsing` and `CustomerRecord` may be run without a customer focus by providing (a token or) the email address of the current target customer.
+Normally, all application- or customer-specific functions require such a focus. Only `resendConfirmationEMailToCustomer`, `confirmCustomerUsing`, `startPasswordResetForCustomer` and `resetCustomerPasswordUsing` may be run without a customer focus by providing (a token or) the email address of the current target customer.
 
 ### Error Handling ###
 
