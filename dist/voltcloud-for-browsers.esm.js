@@ -1128,7 +1128,7 @@ function loginDeveloper(EMailAddress, Password, firstAttempt) {
                     _a.trys.push([1, 3, , 4]);
                     activeDeveloperAddress = EMailAddress; // needed in case of login failure
                     activeDeveloperPassword = Password;
-                    return [4 /*yield*/, ResponseOf('public', 'POST', '{{dashboard_url}}/api/auth/login', null, {
+                    return [4 /*yield*/, ResponseOf('public', 'POST', '{{application_url}}/api/auth/login', null, {
                             grant_type: 'password',
                             username: EMailAddress,
                             password: Password,
