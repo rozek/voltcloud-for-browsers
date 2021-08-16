@@ -65,9 +65,13 @@
 /**** focusOnApplication - async for for the sake of systematics only ****/
 
   export async function focusOnApplication (
-    ApplicationURL:string
+    ApplicationURL:string, ApplicationId:string
   ):Promise<void> {
+    expectURL          ('VoltCloud application url',ApplicationURL)
+    expectNonEmptyString('VoltCloud application id',ApplicationId)
+
     currentApplicationURL = ApplicationURL
+    currentApplicationId  = ApplicationId
   }
 
 /**** actOnBehalfOfDeveloper ****/
