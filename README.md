@@ -216,12 +216,12 @@ This repository contains a small "smoke test" (in a file called "smoke-test.html
 
 Before that test may be run, a few preparational steps have to be taken:
 
-1. download this repository (either using [git](https://git-scm.com/) in any of its variants or by unpacking a downloaded a [ZIP archive containing this repo](https://github.com/rozek/voltcloud-for-browsers/archive/refs/heads/main.zip)) - it contains the ZIP archive with the smoke test which will have to be uploaded to VoltCloud soon
-2. Navigate to the VoltCloud dashboard, sign in and create a new application - you may rename it if desired, but that's not really important
-3. enter `/#/confirm/{{token}}` as the "Confirm Page" and `/#/reset/{{token}}` as the "Reset Page"
-4. click on "Save" to persist theses changes
+1. download this repository (either using [git](https://git-scm.com/) in any of its variants or by unpacking a downloaded a [ZIP archive containing this repo](https://github.com/rozek/voltcloud-for-browsers/archive/refs/heads/main.zip)) - it comes with a ZIP archive containing the smoke test ready to be uploaded to VoltCloud
+2. navigate to the VoltCloud dashboard, sign in and create a new application - you may rename it if desired, but that's not really important
+3. enter `/#/confirm/{{token}}` as the "Confirm Page" and `/#/reset/{{token}}` as the "Reset Page" - do not let yourself be fooled by the input field placeholders which show the same text and look as if you would have already entered these values!
+4. click on "Save" to persist your changes
 5. now "Upload" the file `smoke-test-archive-for-upload.zip` from this repository
-6. finally click on the "Action" named "Storage", then on "+ Add" and enter `key-1` as the "Key" and `value-1` as the "Value" of a new application Storage entry - there is no need to explicitly "Save" theses settings
+6. finally click on the "Action" named "Storage" first, then on "+ Add" and enter `key-1` as the "Key" and `value-1` as the "Value" of a new application Storage entry - there is no need to explicitly "Save" theses settings
 
 ### Execution ###
 
@@ -230,7 +230,7 @@ To run this test, simply click on the application's "URL" shown in the VoltCloud
 The whole test will run in four phases. At first, you will have to enter
 
 * the EMail address of an application developer (that is you)
-* the develpper's password (the one used to sign into VoltCloud)
+* the developer's password (the one used to sign into VoltCloud)
 * the EMail address of a "customer" (different from the developer! choose an address you have access to as you will have to open several incoming EMails)
 * the VoltCloud id of your smoke test (shown as the "Id" in the VoltCloud dashboard)
 
