@@ -35,7 +35,7 @@ export declare type VC_StorageSet = {
     [Key: string]: VC_StorageValue;
 };
 /**** focusOnApplication - async for for the sake of systematics only ****/
-export declare function focusOnApplication(ApplicationURL: string): Promise<void>;
+export declare function focusOnApplication(ApplicationURL: string, ApplicationId: string): Promise<void>;
 /**** actOnBehalfOfDeveloper ****/
 export declare function actOnBehalfOfDeveloper(EMailAddress: string, Password: string): Promise<void>;
 /**** actOnBehalfOfCustomer ****/

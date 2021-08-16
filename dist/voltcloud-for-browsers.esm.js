@@ -90,6 +90,21 @@ var EMailAddressPattern = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=
 function ValueIsEMailAddress(Value) {
     return ValueIsStringMatching(Value, EMailAddressPattern);
 }
+/**** ValueIsURL ****/
+var noCtrlCharsOrWhitespacePattern = /^[^\s\x00-\x1F\x7F-\x9F\u2028\u2029\uFFF9-\uFFFB]*$/;
+function ValueIsURL(Value) {
+    if (!ValueIsStringMatching(Value, noCtrlCharsOrWhitespacePattern) ||
+        (Value === '')) {
+        return false;
+    }
+    try {
+        new URL(Value, 'file://');
+        return true;
+    }
+    catch (Signal) {
+        return false;
+    }
+}
 //------------------------------------------------------------------------------
 //--                      Argument Validation Functions                       --
 //------------------------------------------------------------------------------
@@ -172,6 +187,7 @@ var expectPlainObject = /*#__PURE__*/ ValidatorForClassifier(ValueIsPlainObject,
 /**** allow/expect[ed]EMailAddress ****/
 var allowEMailAddress = /*#__PURE__*/ ValidatorForClassifier(ValueIsEMailAddress, acceptNil, 'valid EMail address');
 var expectEMailAddress = /*#__PURE__*/ ValidatorForClassifier(ValueIsEMailAddress, rejectNil, 'valid EMail address');
+var expectURL = /*#__PURE__*/ ValidatorForClassifier(ValueIsURL, rejectNil, 'valid URL');
 /**** escaped - escapes all control characters in a given string ****/
 function escaped(Text) {
     var EscapeSequencePattern = /\\x[0-9a-zA-Z]{2}|\\u[0-9a-zA-Z]{4}|\\[0bfnrtv'"\\\/]?/g;
@@ -256,10 +272,13 @@ var currentApplicationURL;
 var currentCustomerId;
 var currentCustomerAddress;
 /**** focusOnApplication - async for for the sake of systematics only ****/
-function focusOnApplication(ApplicationURL) {
+function focusOnApplication(ApplicationURL, ApplicationId) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
+            expectURL('VoltCloud application url', ApplicationURL);
+            expectNonEmptyString('VoltCloud application id', ApplicationId);
             currentApplicationURL = ApplicationURL;
+            currentApplicationId = ApplicationId;
             return [2 /*return*/];
         });
     });
