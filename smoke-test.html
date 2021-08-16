@@ -122,7 +122,7 @@
       updateCustomerRecordBy, deleteCustomer,
     CustomerStorage, CustomerStorageEntry, setCustomerStorageEntryTo,
       deleteCustomerStorageEntry, clearCustomerStorage
-  `.replace(/,/g,'').replace(/\s+/,' ').trim().split(' ').forEach(
+  `.replace(/,/g,' ').replace(/\s+/,' ').trim().split(' ').forEach(
     (FunctionName) => global[FunctionName] = VoltCloud[FunctionName]
   )
 
@@ -317,14 +317,12 @@
 /**** common tests ****/
 
   async function runCommonTests () {
-    console.log('acting on behalf of developer "' + DeveloperAddress + '"')
-    await actOnBehalfOfDeveloper(DeveloperAddress,DeveloperPassword)
-
   /**** focus on this application ****/
 
     await focusOnApplication(document.location.origin, ApplicationId)
 
-
+    console.log('acting on behalf of developer "' + DeveloperAddress + '"')
+    await actOnBehalfOfDeveloper(DeveloperAddress,DeveloperPassword)
   }
 
 /**** Phase 1 tests ****/
@@ -358,7 +356,6 @@
     })
     expect(CustomerId).to.exist
 
-
     ElementWithId('Phase_1_Summary').style.display = 'block'
   }
 
@@ -368,7 +365,6 @@
   /**** resend confirmation email ****/
 
     await resendConfirmationEMailToCustomer(CustomerAddress)
-
 
     ElementWithId('Phase_2_Summary').style.display = 'block'
   }
@@ -560,7 +556,6 @@
 
     console.log('- deleting customer')
     await deleteCustomer()
-
 
     ElementWithId('Phase_4_Summary').style.display = 'block'
   }
