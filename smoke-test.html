@@ -20,7 +20,7 @@
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js"></script>
-  <script src="https://www.rozek.de/js/voltcloud-for-browsers.js"></script>
+  <script src="https://unpkg.com/voltcloud-for-browsers"></script>
  </head>
  <body>
   <h1>"voltcloud-for-browsers" Smoke Test</h1>
@@ -137,6 +137,7 @@
   const DeveloperKey     = 'voltcloud-for-browsers: Developer'
   const CustomerKey      = 'voltcloud-for-browsers: Customer'
   const ApplicationIdKey = 'voltcloud-for-browsers: ApplicationId'
+  const CustomerIdKey    = 'voltcloud-for-browsers: CustomerId'
 
   const expect = chai.expect
 
@@ -167,6 +168,7 @@
   DeveloperAddress = (localStorage[DeveloperKey]     || '').trim()
   CustomerAddress  = (localStorage[CustomerKey]      || '').trim()
   ApplicationId    = (localStorage[ApplicationIdKey] || '').trim()
+  CustomerId       = (localStorage[CustomerIdKey]    || '').trim()
 
 /**** display required sections ****/
 
@@ -319,6 +321,7 @@
   async function runCommonTests () {
   /**** focus on this application ****/
 
+    console.log('focusing on application with URL "' + document.location.origin + '"')
     await focusOnApplication(document.location.origin, ApplicationId)
 
     console.log('acting on behalf of developer "' + DeveloperAddress + '"')
@@ -348,15 +351,9 @@
     CustomerPassword = 't0pS3cr3t!'
     await focusOnNewCustomer(CustomerAddress,CustomerPassword)
 
-    CustomerRecordList = await CustomerRecords()
-    CustomerRecordList.forEach((CustomerRecord) => {
-      if (CustomerRecord.email === CustomerAddress) {
-        CustomerId = CustomerRecord.id
-      }
-    })
-    expect(CustomerId).to.exist
 
     ElementWithId('Phase_1_Summary').style.display = 'block'
+    localStorage[currentPhaseKey] = 2
   }
 
 /**** Phase 2 tests ****/
@@ -367,6 +364,7 @@
     await resendConfirmationEMailToCustomer(CustomerAddress)
 
     ElementWithId('Phase_2_Summary').style.display = 'block'
+    localStorage[currentPhaseKey] = 3
   }
 
 /**** Phase 3 tests ****/
@@ -377,11 +375,15 @@
     console.log('- confirming customer "' + CustomerAddress + '"')
     await confirmCustomerUsing(CustomerConfirmationToken)
 
-    await focusOnCustomerWithAddress(CustomerAddress)
+    CustomerPassword = 't0pS3cr3t!'
+    await actOnBehalfOfCustomer(CustomerAddress,CustomerPassword)
 
     CustomerInfo = await CustomerRecord()
     expect(CustomerInfo).to.be.an('object')
-    expect(CustomerInfo.id).to.equal(CustomerId)
+    expect(CustomerInfo.email)    .to.equal(CustomerAddress)
+    expect(CustomerInfo.confirmed).to.equal(true)
+
+    localStorage[CustomerIdKey] = CustomerInfo.id             // saved for later
 
   /**** start password reset ****/
 
@@ -389,6 +391,7 @@
     await startPasswordResetForCustomer(CustomerAddress)
 
     ElementWithId('Phase_3_Summary').style.display = 'block'
+    localStorage[currentPhaseKey] = 4
   }
 
 /**** Phase 4 tests ****/
@@ -397,16 +400,14 @@
   /**** perform password reset ****/
 
     console.log('- performing password reset for customer "' + CustomerAddress + '"')
+
+    CustomerPassword = 'an0ther-Passw0rd'
     await resetCustomerPasswordUsing(CustomerResetToken,CustomerPassword)
 
   /**** focus on the given customer ****/
 
     console.log('- focusing on customer "' + CustomerAddress + '"')
-    await focusOnCustomerWithAddress(CustomerAddress)
-
-    CustomerInfo = await CustomerRecord()
-    expect(CustomerInfo).to.be.an('object')
-    expect(CustomerInfo.id).to.equal(CustomerId)
+    await focusOnCustomer(CustomerId)
 
   /**** test CustomerStorage management ****/
 
@@ -470,9 +471,9 @@
 
   /**** change customer password ****/
 
-    await changeCustomerPasswordTo('an0ther-Passw0rd')
+    await changeCustomerPasswordTo('t0pS3cr3t!')
 
-    CustomerPassword = 'an0ther-Passw0rd'
+    CustomerPassword = 't0pS3cr3t!'
     await actOnBehalfOfCustomer(CustomerAddress,CustomerPassword)
 
   /**** change customer password ****/
@@ -558,6 +559,7 @@
     await deleteCustomer()
 
     ElementWithId('Phase_4_Summary').style.display = 'block'
+    localStorage[currentPhaseKey] = 1
   }
 
   /**** KeysOf ****/
