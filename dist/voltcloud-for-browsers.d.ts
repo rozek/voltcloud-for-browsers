@@ -49,15 +49,15 @@ export declare function focusOnCustomer(CustomerId: string): Promise<void>;
 /**** focusOnNewCustomer ****/
 export declare function focusOnNewCustomer(EMailAddress: string, Password: string): Promise<void>;
 /**** resendConfirmationEMailToCustomer ****/
-export declare function resendConfirmationEMailToCustomer(EMailAddress?: string): Promise<void>;
+export declare function resendConfirmationEMailToCustomer(EMailAddress: string): Promise<void>;
 /**** confirmCustomerUsing ****/
 export declare function confirmCustomerUsing(Token: string): Promise<void>;
 /**** startPasswordResetForCustomer ****/
-export declare function startPasswordResetForCustomer(EMailAddress?: string): Promise<void>;
+export declare function startPasswordResetForCustomer(EMailAddress: string): Promise<void>;
 /**** resetCustomerPasswordUsing ****/
 export declare function resetCustomerPasswordUsing(Token: string, Password: string): Promise<void>;
 /**** CustomerRecord ****/
-export declare function CustomerRecord(CustomerId?: string): Promise<VC_CustomerRecord | undefined>;
+export declare function CustomerRecord(): Promise<VC_CustomerRecord | undefined>;
 /**** changeCustomerEMailAddressTo ****/
 export declare function changeCustomerEMailAddressTo(EMailAddress: string): Promise<void>;
 /**** changeCustomerPasswordTo ****/

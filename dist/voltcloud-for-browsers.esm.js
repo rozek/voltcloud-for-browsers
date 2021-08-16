@@ -180,12 +180,8 @@ function FunctionWithName(originalFunction, desiredName) {
         '}');
     return renamed(originalFunction);
 } // also works with older JavaScript engines
-/**** allow/expect[ed]NonEmptyString ****/
-var allowNonEmptyString = /*#__PURE__*/ ValidatorForClassifier(ValueIsNonEmptyString, acceptNil, 'non-empty literal string');
 var expectNonEmptyString = /*#__PURE__*/ ValidatorForClassifier(ValueIsNonEmptyString, rejectNil, 'non-empty literal string');
 var expectPlainObject = /*#__PURE__*/ ValidatorForClassifier(ValueIsPlainObject, rejectNil, '"plain" JavaScript object');
-/**** allow/expect[ed]EMailAddress ****/
-var allowEMailAddress = /*#__PURE__*/ ValidatorForClassifier(ValueIsEMailAddress, acceptNil, 'valid EMail address');
 var expectEMailAddress = /*#__PURE__*/ ValidatorForClassifier(ValueIsEMailAddress, rejectNil, 'valid EMail address');
 var expectURL = /*#__PURE__*/ ValidatorForClassifier(ValueIsURL, rejectNil, 'valid URL');
 /**** escaped - escapes all control characters in a given string ****/
@@ -270,7 +266,6 @@ var activeAccessToken;
 var currentApplicationId;
 var currentApplicationURL;
 var currentCustomerId;
-var currentCustomerAddress;
 /**** focusOnApplication - async for for the sake of systematics only ****/
 function focusOnApplication(ApplicationURL, ApplicationId) {
     return __awaiter(this, void 0, void 0, function () {
@@ -455,7 +450,6 @@ function focusOnNewCustomer(EMailAddress, Password) {
                 case 4:
                     if ((Response != null) && ValueIsString(Response.id)) {
                         currentCustomerId = Response.id;
-                        currentCustomerAddress = EMailAddress;
                     }
                     else {
                         throwError('InternalError: could not analyze response for registration request');
@@ -472,12 +466,8 @@ function resendConfirmationEMailToCustomer(EMailAddress) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    allowEMailAddress('VoltCloud customer email address', EMailAddress);
+                    expectEMailAddress('VoltCloud customer email address', EMailAddress);
                     assertApplicationFocus();
-                    if (EMailAddress == null) {
-                        assertCustomerFocus();
-                        EMailAddress = currentCustomerAddress;
-                    }
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -540,12 +530,8 @@ function startPasswordResetForCustomer(EMailAddress) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    allowEMailAddress('VoltCloud customer email address', EMailAddress);
+                    expectEMailAddress('VoltCloud customer email address', EMailAddress);
                     assertApplicationFocus();
-                    if (EMailAddress == null) {
-                        assertCustomerFocus();
-                        EMailAddress = currentCustomerAddress;
-                    }
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -605,13 +591,12 @@ function resetCustomerPasswordUsing(Token, Password) {
     });
 }
 /**** CustomerRecord ****/
-function CustomerRecord(CustomerId) {
+function CustomerRecord() {
     return __awaiter(this, void 0, void 0, function () {
         var Response, Signal_8;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    allowNonEmptyString('VoltCloud customer id', CustomerId);
                     assertApplicationFocus();
                     assertCustomerMandate();
                     _a.label = 1;
@@ -634,9 +619,7 @@ function CustomerRecord(CustomerId) {
                     }
                     return [3 /*break*/, 4];
                 case 4:
-                    if ((Response != null) && (Response.id === CustomerId)) {
-                        //    currentCustomerId      = Response.id
-                        currentCustomerAddress = Response.email; // might have changed
+                    if ((Response != null) && (Response.id === activeCustomerId)) {
                         if (currentCustomerId === activeCustomerId) {
                             activeCustomerAddress = Response.email; // might have changed
                         }
@@ -684,8 +667,6 @@ function changeCustomerEMailAddressTo(EMailAddress) {
                     return [3 /*break*/, 4];
                 case 4:
                     if ((Response != null) && (Response.id === currentCustomerId)) {
-                        //    currentCustomerId      = Response.id
-                        currentCustomerAddress = Response.email;
                         if (currentCustomerId === activeCustomerId) {
                             activeCustomerAddress = Response.email; // might have changed
                         }
@@ -781,8 +762,6 @@ function updateCustomerRecordBy(Settings) {
                     return [3 /*break*/, 4];
                 case 4:
                     if ((Response != null) && (Response.id === currentCustomerId)) {
-                        //    currentCustomerId      = Response.id
-                        currentCustomerAddress = Response.email; // might have changed
                         if (currentCustomerId === activeCustomerId) {
                             activeCustomerAddress = Response.email; // might have changed
                             if (Settings.password != null) {
@@ -1101,9 +1080,9 @@ function assertApplicationFocus() {
     if (currentApplicationURL == null)
         throwError('InvalidState: please focus on a specific VoltCloud application first');
 }
-/**** assertCustomerFocus (based on EMail address here) ****/
+/**** assertCustomerFocus ****/
 function assertCustomerFocus() {
-    if (currentCustomerAddress == null)
+    if (currentCustomerId == null)
         throwError('InvalidState: please focus on a specific VoltCloud application customer first');
 }
 /**** loginDeveloper ****/
@@ -1122,7 +1101,6 @@ function loginDeveloper(EMailAddress, Password, firstAttempt) {
                     activeCustomerPassword = undefined; // dto.
                     activeAccessToken = undefined;
                     currentCustomerId = undefined; // unfocus any customer
-                    currentCustomerAddress = undefined; // dto.
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -1132,7 +1110,7 @@ function loginDeveloper(EMailAddress, Password, firstAttempt) {
                             grant_type: 'password',
                             username: EMailAddress,
                             password: Password,
-                            scope: currentApplicationId
+                            scope: 'RpYCMN'
                         }, firstAttempt)];
                 case 2:
                     Response = _a.sent();
@@ -1177,7 +1155,6 @@ function loginCustomer(EMailAddress, Password, firstAttempt) {
                     activeDeveloperPassword = undefined; // dto.
                     activeAccessToken = undefined;
                     currentCustomerId = undefined; // unfocus any customer
-                    currentCustomerAddress = undefined; // dto.
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -1206,7 +1183,6 @@ function loginCustomer(EMailAddress, Password, firstAttempt) {
                         activeCustomerId = Response.user_id;
                         activeAccessToken = Response.access_token;
                         currentCustomerId = Response.user_id; // auto-focus logged-in customer
-                        currentCustomerAddress = EMailAddress; // dto.
                     }
                     else {
                         activeCustomerAddress = undefined;
@@ -1248,66 +1224,85 @@ function ResponseOf(Mode, Method, URL, Parameters, Data, firstAttempt) {
                     Request.addEventListener('abort', function () {
                         reject(namedError('RequestAborted: VoltCloud request has been aborted'));
                     });
-                    Request.addEventListener('error', function () {
-                        if (Request.status === 401) {
-                            if (firstAttempt) { // try to "refresh" the access token
-                                return (activeDeveloperAddress != null // also catches login failures
-                                    ? loginDeveloper(activeDeveloperAddress, activeDeveloperPassword, false)
-                                    : loginCustomer(activeCustomerAddress, activeCustomerPassword, false))
-                                    .then(function () {
-                                    ResponseOf(Mode, Method, URL, Parameters, Data, false)
-                                        .then(function (Result) { return resolve(Result); })
-                                        .catch(function (Signal) { return reject(Signal); });
-                                })
-                                    .catch(function (Signal) { return reject(Signal); });
-                            }
-                            else {
-                                return reject(namedError('AuthorizationFailure: VoltCloud request could not be authorized'));
-                            }
-                        }
-                        var ContentType = Request.getResponseHeader('content-type') || '';
-                        if (ContentType.startsWith('application/json')) {
-                            try { // if given, try to use a VoltCloud error message
-                                var ErrorDetails = JSON.parse(Request.responseText);
-                                if (ValueIsNonEmptyString(ErrorDetails.type) &&
-                                    ValueIsNonEmptyString(ErrorDetails.message)) {
-                                    if ((Request.status === 422) &&
-                                        (ErrorDetails.type === 'ValidationError') &&
-                                        (ErrorDetails.validations != null)) {
-                                        return reject(ValidationError(ErrorDetails));
+                    function handleError() {
+                        return __awaiter(this, void 0, void 0, function () {
+                            var ContentType, ErrorDetails;
+                            return __generator(this, function (_a) {
+                                if (Request.status === 401) {
+                                    if (firstAttempt) { // try to "refresh" the access token
+                                        return [2 /*return*/, (activeDeveloperAddress != null // also catches login failures
+                                                ? loginDeveloper(activeDeveloperAddress, activeDeveloperPassword, false)
+                                                : loginCustomer(activeCustomerAddress, activeCustomerPassword, false))
+                                                .then(function () {
+                                                ResponseOf(Mode, Method, URL, Parameters, Data, false)
+                                                    .then(function (Result) { return resolve(Result); })
+                                                    .catch(function (Signal) { return reject(Signal); });
+                                            })
+                                                .catch(function (Signal) { return reject(Signal); })];
                                     }
                                     else {
-                                        return reject(namedError(ErrorDetails.type + ': ' + ErrorDetails.message, {
-                                            HTTPStatus: Request.status, HTTPResponse: Request.responseText
-                                        }));
+                                        return [2 /*return*/, reject(namedError('AuthorizationFailure: VoltCloud request could not be authorized'))];
                                     }
                                 }
-                            }
-                            catch (Signal) { /* otherwise create a generic error message */ }
-                        }
-                        return reject(namedError('RequestFailed: VoltCloud request failed', {
-                            HTTPStatus: Request.status, HTTPResponse: Request.responseText
-                        }));
-                    });
+                                ContentType = Request.getResponseHeader('content-type') || '';
+                                if (ContentType.startsWith('application/json')) {
+                                    try { // if given, try to use a VoltCloud error message
+                                        ErrorDetails = JSON.parse(Request.responseText);
+                                        if (ValueIsNonEmptyString(ErrorDetails.type) &&
+                                            ValueIsNonEmptyString(ErrorDetails.message)) {
+                                            if ((Request.status === 422) &&
+                                                (ErrorDetails.type === 'ValidationError') &&
+                                                (ErrorDetails.validations != null)) {
+                                                return [2 /*return*/, reject(ValidationError(ErrorDetails))];
+                                            }
+                                            else {
+                                                return [2 /*return*/, reject(namedError(ErrorDetails.type + ': ' + ErrorDetails.message, {
+                                                        HTTPStatus: Request.status, HTTPResponse: Request.responseText
+                                                    }))];
+                                            }
+                                        }
+                                    }
+                                    catch (Signal) { /* otherwise create a generic error message */ }
+                                }
+                                return [2 /*return*/, reject(namedError('RequestFailed: VoltCloud request failed', {
+                                        HTTPStatus: Request.status, HTTPResponse: Request.responseText
+                                    }))];
+                            });
+                        });
+                    }
+                    Request.addEventListener('error', handleError);
+                    function handleSuccess() {
+                        return __awaiter(this, void 0, void 0, function () {
+                            var StatusCode, ContentType;
+                            return __generator(this, function (_a) {
+                                StatusCode = Request.status;
+                                ContentType = Request.getResponseHeader('content-type') || '';
+                                if (StatusCode === 204) {
+                                    return [2 /*return*/, resolve(undefined)];
+                                }
+                                else {
+                                    switch (true) {
+                                        case ContentType.startsWith('application/json'):
+                                            return [2 /*return*/, resolve(JSON.parse(Request.responseText))];
+                                        case (StatusCode === 201): // often with content-type "text/plain"
+                                            return [2 /*return*/, resolve(undefined)];
+                                        default:
+                                            return [2 /*return*/, reject(namedError('RequestFailed: unexpected response content type ' +
+                                                    quoted(ContentType || '(missing)'), {
+                                                    ContentType: ContentType,
+                                                    HTTPResponse: Request.responseText
+                                                }))];
+                                    }
+                                }
+                            });
+                        });
+                    }
                     Request.addEventListener('load', function () {
-                        var StatusCode = Request.status;
-                        var ContentType = Request.getResponseHeader('content-type') || '';
-                        if (StatusCode === 204) {
-                            return resolve(undefined);
+                        if ((Request.status < 200) || (Request.status >= 300)) {
+                            handleError();
                         }
                         else {
-                            switch (true) {
-                                case ContentType.startsWith('application/json'):
-                                    return resolve(JSON.parse(Request.responseText));
-                                case (StatusCode === 201): // often with content-type "text/plain"
-                                    return resolve(undefined);
-                                default:
-                                    return reject(namedError('RequestFailed: unexpected response content type ' +
-                                        quoted(ContentType || '(missing)'), {
-                                        ContentType: ContentType,
-                                        HTTPResponse: Request.responseText
-                                    }));
-                            }
+                            handleSuccess();
                         }
                     });
                     if (Data == null) {
