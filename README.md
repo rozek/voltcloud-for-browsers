@@ -4,7 +4,7 @@ a simple VoltCloud client library for web browsers
 
 [VoltCloud.io](https://voltcloud.io) is a simple (and reasonably priced) deployment server for web applications with integrated user management and key-value stores for both the application itself and any of its users.
 
-`voltcloud-for-browsers` is a simple client library for web applications which need access to VoltCloud and its functions. It is the counterpart of [voltcloud-for-nodejs](https://github.com/rozek/voltcloud-for-nodejs), a similar library for applications and servers based on Node.js
+`voltcloud-for-browsers` is a simple client library for web applications which need access to VoltCloud and its functions. Because of security restrictions due to CORS, it contains a subset of operations offered by [voltcloud-for-nodejs](https://github.com/rozek/voltcloud-for-nodejs), a similar library for applications and servers based on Node.js
 
 See below for a "smoke test" which may also serve as an example for how to use this library.
 
