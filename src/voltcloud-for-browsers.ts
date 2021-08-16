@@ -231,16 +231,11 @@
 /**** resendConfirmationEMailToCustomer ****/
 
   export async function resendConfirmationEMailToCustomer (
-    EMailAddress?:string
+    EMailAddress:string
   ):Promise<void> {
-    allowEMailAddress('VoltCloud customer email address',EMailAddress)
+    expectEMailAddress('VoltCloud customer email address',EMailAddress)
 
     assertApplicationFocus()
-
-    if (EMailAddress == null) {
-      assertCustomerFocus()
-      EMailAddress = currentCustomerAddress
-    }
 
     try {
       await ResponseOf(
@@ -284,16 +279,11 @@
 /**** startPasswordResetForCustomer ****/
 
   export async function startPasswordResetForCustomer (
-    EMailAddress?:string
+    EMailAddress:string
   ):Promise<void> {
-    allowEMailAddress('VoltCloud customer email address',EMailAddress)
+    expectEMailAddress('VoltCloud customer email address',EMailAddress)
 
     assertApplicationFocus()
-
-    if (EMailAddress == null) {
-      assertCustomerFocus()
-      EMailAddress = currentCustomerAddress
-    }
 
     try {
       await ResponseOf(
@@ -341,11 +331,7 @@
 
 /**** CustomerRecord ****/
 
-  export async function CustomerRecord (
-    CustomerId?:string
-  ):Promise<VC_CustomerRecord | undefined> {
-    allowNonEmptyString('VoltCloud customer id',CustomerId)
-
+  export async function CustomerRecord ():Promise<VC_CustomerRecord | undefined> {
     assertApplicationFocus()
     assertCustomerMandate()
 
@@ -365,7 +351,7 @@
           default: throw Signal
         }
       }
-    if ((Response != null) && (Response.id === CustomerId)) {
+    if ((Response != null) && (Response.id === activeCustomerId)) {
 //    currentCustomerId      = Response.id
       currentCustomerAddress = Response.email              // might have changed
 
@@ -813,10 +799,10 @@
     )
   }
 
-/**** assertCustomerFocus (based on EMail address here) ****/
+/**** assertCustomerFocus ****/
 
   function assertCustomerFocus ():void {
-    if (currentCustomerAddress == null) throwError(
+    if (currentCustomerId == null) throwError(
       'InvalidState: please focus on a specific VoltCloud application customer first'
     )
   }
@@ -849,7 +835,7 @@
           grant_type: 'password',
           username:   EMailAddress,
           password:   Password,
-          scope:      currentApplicationId
+          scope:      'RpYCMN'
         }, firstAttempt
       )
     } catch (Signal) {
@@ -969,7 +955,7 @@
           reject(namedError('RequestAborted: VoltCloud request has been aborted'))
         })
 
-        Request.addEventListener('error', () => {
+        async function handleError ():Promise<void> {
           if (Request.status === 401) {
             if (firstAttempt) {             // try to "refresh" the access token
               return (
@@ -1016,9 +1002,10 @@
           return reject(namedError('RequestFailed: VoltCloud request failed', {
             HTTPStatus:Request.status, HTTPResponse:Request.responseText
           }))
-        })
+        }
+        Request.addEventListener('error', handleError)
 
-        Request.addEventListener('load', () => {
+        async function handleSuccess ():Promise<void> {
           let StatusCode  = Request.status
           let ContentType = Request.getResponseHeader('content-type') || ''
 
@@ -1038,6 +1025,14 @@
                   }
                 ))
             }
+          }
+        }
+
+        Request.addEventListener('load', () => {
+          if ((Request.status < 200) || (Request.status >= 300)) {
+            handleError()
+          } else {
+            handleSuccess()
           }
         })
       if (Data == null) {
