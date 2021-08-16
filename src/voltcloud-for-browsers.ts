@@ -845,7 +845,7 @@
       activeDeveloperPassword = Password
 
       Response = await ResponseOf(
-        'public', 'POST', '{{dashboard_url}}/api/auth/login', null, {
+        'public', 'POST', '{{application_url}}/api/auth/login', null, {
           grant_type: 'password',
           username:   EMailAddress,
           password:   Password,
