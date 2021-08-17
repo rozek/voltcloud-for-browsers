@@ -247,7 +247,6 @@ function quoted(Text, Quote) {
 
 //----------------------------------------------------------------------------//
 /**** VoltCloud-specific types and constants ****/
-var ApplicationIdPattern = /^[a-zA-Z0-9]{6,}$/; // taken from a validation error message
 var ApplicationNamePattern = /^([a-z0-9]|[a-z0-9][-a-z0-9]*[a-z0-9])$/; // dto.
 var maxApplicationNameLength = 63; // see discussion forum
 var maxEMailAddressLength = 255; // dto.
@@ -1229,7 +1228,7 @@ function ResponseOf(Mode, Method, URL, Parameters, Data, firstAttempt) {
                             var ContentType, ErrorDetails;
                             return __generator(this, function (_a) {
                                 if (Request.status === 401) {
-                                    if (firstAttempt) { // try to "refresh" the access token
+                                    if (firstAttempt && (Mode !== 'public')) { // try to "refresh" the access token
                                         return [2 /*return*/, (activeDeveloperAddress != null // also catches login failures
                                                 ? loginDeveloper(activeDeveloperAddress, activeDeveloperPassword, false)
                                                 : loginCustomer(activeCustomerAddress, activeCustomerPassword, false))
@@ -1241,7 +1240,7 @@ function ResponseOf(Mode, Method, URL, Parameters, Data, firstAttempt) {
                                                 .catch(function (Signal) { return reject(Signal); })];
                                     }
                                     else {
-                                        return [2 /*return*/, reject(namedError('AuthorizationFailure: VoltCloud request could not be authorized'))];
+                                        return [2 /*return*/, reject(namedError('AuthorizationFailure: VoltCloud request could not be authorized', { HTTPStatus: Request.status }))];
                                     }
                                 }
                                 ContentType = Request.getResponseHeader('content-type') || '';
@@ -1400,5 +1399,5 @@ function ValidationError(Details) {
     return namedError('InternalError: ' + Details.message, Details);
 }
 
-export { ApplicationIdPattern, ApplicationNamePattern, ApplicationStorage, ApplicationStorageEntry, CustomerRecord, CustomerStorage, CustomerStorageEntry, ValueIsApplicationName, ValueIsPassword, ValueIsStorageKey, ValueIsStorageValue, actOnBehalfOfCustomer, actOnBehalfOfDeveloper, allowApplicationName, allowPassword, allowStorageKey, allowStorageValue, allowedApplicationName, allowedPassword, allowedStorageKey, allowedStorageValue, changeCustomerEMailAddressTo, changeCustomerPasswordTo, clearCustomerStorage, confirmCustomerUsing, deleteCustomer, deleteCustomerStorageEntry, expectApplicationName, expectPassword, expectStorageKey, expectStorageValue, expectedApplicationName, expectedPassword, expectedStorageKey, expectedStorageValue, focusOnApplication, focusOnCustomer, focusOnNewCustomer, maxApplicationNameLength, maxEMailAddressLength, maxNamePartLength, maxStorageKeyLength, maxStorageValueLength, resendConfirmationEMailToCustomer, resetCustomerPasswordUsing, setCustomerStorageEntryTo, startPasswordResetForCustomer, updateCustomerRecordBy };
+export { ApplicationNamePattern, ApplicationStorage, ApplicationStorageEntry, CustomerRecord, CustomerStorage, CustomerStorageEntry, ValueIsApplicationName, ValueIsPassword, ValueIsStorageKey, ValueIsStorageValue, actOnBehalfOfCustomer, actOnBehalfOfDeveloper, allowApplicationName, allowPassword, allowStorageKey, allowStorageValue, allowedApplicationName, allowedPassword, allowedStorageKey, allowedStorageValue, changeCustomerEMailAddressTo, changeCustomerPasswordTo, clearCustomerStorage, confirmCustomerUsing, deleteCustomer, deleteCustomerStorageEntry, expectApplicationName, expectPassword, expectStorageKey, expectStorageValue, expectedApplicationName, expectedPassword, expectedStorageKey, expectedStorageValue, focusOnApplication, focusOnCustomer, focusOnNewCustomer, maxApplicationNameLength, maxEMailAddressLength, maxNamePartLength, maxStorageKeyLength, maxStorageValueLength, resendConfirmationEMailToCustomer, resetCustomerPasswordUsing, setCustomerStorageEntryTo, startPasswordResetForCustomer, updateCustomerRecordBy };
 //# sourceMappingURL=voltcloud-for-browsers.esm.js.map

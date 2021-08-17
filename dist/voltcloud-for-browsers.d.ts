@@ -1,5 +1,4 @@
 /**** VoltCloud-specific types and constants ****/
-export declare const ApplicationIdPattern: RegExp;
 export declare const ApplicationNamePattern: RegExp;
 export declare const maxApplicationNameLength = 63;
 export declare const maxEMailAddressLength = 255;
