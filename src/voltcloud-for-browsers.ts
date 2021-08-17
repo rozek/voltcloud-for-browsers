@@ -13,7 +13,6 @@
 
 /**** VoltCloud-specific types and constants ****/
 
-  export const ApplicationIdPattern     = /^[a-zA-Z0-9]{6,}$/ // taken from a validation error message
   export const ApplicationNamePattern   = /^([a-z0-9]|[a-z0-9][-a-z0-9]*[a-z0-9])$/ // dto.
   export const maxApplicationNameLength = 63             // see discussion forum
   export const maxEMailAddressLength    = 255                            // dto.
@@ -957,7 +956,7 @@
 
         async function handleError ():Promise<void> {
           if (Request.status === 401) {
-            if (firstAttempt) {             // try to "refresh" the access token
+            if (firstAttempt && (Mode !== 'public')) { // try to "refresh" the access token
               return (
                 activeDeveloperAddress != null  // also catches login failures
                 ? loginDeveloper(activeDeveloperAddress as string, activeDeveloperPassword as string, false)
@@ -970,7 +969,10 @@
               })
               .catch((Signal) => reject(Signal))
             } else {
-              return reject(namedError('AuthorizationFailure: VoltCloud request could not be authorized'))
+              return reject(namedError(
+                'AuthorizationFailure: VoltCloud request could not be authorized',
+                { HTTPStatus:Request.status }
+              ))
             }
           }
 
