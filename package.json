@@ -1,6 +1,6 @@
 {
   "name": "voltcloud-for-browsers",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "a simple VoltCloud client library for browsers",
   "type": "module",
   "main": "./dist/voltcloud-for-browsers.js",
