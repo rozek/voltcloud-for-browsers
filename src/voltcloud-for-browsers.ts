@@ -4,10 +4,9 @@
 
   import {
     throwError, quoted,
-    ValueIsString, ValueIsNonEmptyString, ValueIsTextline, ValueIsArray,
-    expectValue,
-    allowNonEmptyString, expectNonEmptyString, expectPlainObject,
-    allowEMailAddress, expectEMailAddress, expectURL,
+    ValueIsString, ValueIsNonEmptyString, ValueIsArray,
+    expectNonEmptyString, expectPlainObject,
+    expectEMailAddress, expectURL,
     ValidatorForClassifier, acceptNil, rejectNil
   } from 'javascript-interface-library'
 
@@ -360,7 +359,7 @@
 
       return Response
     } else {
-      throwError('InternalError: could not analyze response for registration request')
+      throwError('InternalError: could not analyze response for customer record request')
     }
   }
 
@@ -915,7 +914,7 @@
     }
   }
 
-/**** ResponseOf - simplified version for applications ****/
+/**** ResponseOf ****/
 
   async function ResponseOf (
     Mode:'public'|'private',
