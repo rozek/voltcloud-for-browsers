@@ -753,7 +753,7 @@
 /**** ValueIsStorageValue - a string suitable as a VoltCloud storage value ****/
 
   export function ValueIsStorageValue (Value:any):boolean {
-    return ValueIsNonEmptyString(Value) && (Value.length <= maxStorageValueLength)
+    return ValueIsString(Value) && (Value.length <= maxStorageValueLength)
   }
 
 /**** allow/expect[ed]StorageValue ****/
