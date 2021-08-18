@@ -1054,7 +1054,7 @@ var allowStorageKey = ValidatorForClassifier(ValueIsStorageKey, acceptNil, 'suit
 var expectStorageKey = ValidatorForClassifier(ValueIsStorageKey, rejectNil, 'suitable VoltCloud storage key'), expectedStorageKey = expectStorageKey;
 /**** ValueIsStorageValue - a string suitable as a VoltCloud storage value ****/
 function ValueIsStorageValue(Value) {
-    return ValueIsNonEmptyString(Value) && (Value.length <= maxStorageValueLength);
+    return ValueIsString(Value) && (Value.length <= maxStorageValueLength);
 }
 /**** allow/expect[ed]StorageValue ****/
 var allowStorageValue = ValidatorForClassifier(ValueIsStorageValue, acceptNil, 'suitable VoltCloud storage value'), allowedStorageValue = allowStorageValue;
