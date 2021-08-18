@@ -625,7 +625,7 @@ function CustomerRecord() {
                         return [2 /*return*/, Response];
                     }
                     else {
-                        throwError('InternalError: could not analyze response for registration request');
+                        throwError('InternalError: could not analyze response for customer record request');
                     }
                     return [2 /*return*/];
             }
@@ -1193,7 +1193,7 @@ function loginCustomer(EMailAddress, Password, firstAttempt) {
         });
     });
 }
-/**** ResponseOf - simplified version for applications ****/
+/**** ResponseOf ****/
 function ResponseOf(Mode, Method, URL, Parameters, Data, firstAttempt) {
     if (firstAttempt === void 0) { firstAttempt = true; }
     return __awaiter(this, void 0, void 0, function () {
