@@ -6,6 +6,8 @@ a simple VoltCloud client library for web browsers
 
 `voltcloud-for-browsers` is a simple client library for web applications which need access to VoltCloud and its functions. Because of security restrictions due to CORS, it contains a subset of the operations offered by [voltcloud-for-nodejs](https://github.com/rozek/voltcloud-for-nodejs) (a similar library for applications and servers based on Node.js) only, but offers a similar API.
 
+[VfB-Notes](https://vfb-notes.volt.live/) is a simple demonstrator showing `voltcloud-for-browsers` in action (its source is also available on [GitHub](https://github.com/rozek/vfb-notes)).
+
 See below for a "smoke test" which may also serve as an example for how to use this library.
 
 > Please note: the author is not affiliated with the NSB Corporation in any way. If you want to blame any of the author's VoltCloud-related tools and libraries for some misbehaviour, it's not the fault of George Henne and his team - it is the author's mistake!
