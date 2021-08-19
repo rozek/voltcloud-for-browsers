@@ -699,7 +699,8 @@
   export function ValueIsPassword (Value:any):boolean {
     return (
       ValueIsString(Value) && (Value.length >= 8) &&
-      /[0-9]/.test(Value) && (Value.toLowerCase() !== Value)
+      /[0-9]/.test(Value) && /[^a-zA-Z0-9]/.test(Value) &&
+      (Value.toLowerCase() !== Value)
     )
   }
 
