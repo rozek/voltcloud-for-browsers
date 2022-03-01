@@ -72,7 +72,7 @@ npm install voltcloud-for-browsers
 
 or load the plain script file directly
 
-```
+```html
 <script src="https://unpkg.com/voltcloud-for-browsers"></script>
 ```
 
@@ -92,7 +92,7 @@ Note for ECMAScript module users: all module functions and values are exported i
 
 If you prefer, you may simply copy the following statement into your source code and remove all unwanted functions:
 
-```
+```javascript
 import {
   actOnBehalfOfDeveloper, actOnBehalfOfCustomer,
   focusOnApplication,
@@ -111,7 +111,7 @@ import {
 
 For Svelte, it is recommended to import the package in a module context. From then on, its exports may be used as usual:
 
-```
+```html
 <script context="module">
   import { actOnBehalfOfDeveloper, ApplicationRecords } from 'voltcloud-for-browsers'
 </script>
@@ -128,7 +128,7 @@ For Svelte, it is recommended to import the package in a module context. From th
 
 Let's assume that you already "required" or "imported" (or simply loaded) the module according to your local environment. In that case, you may use it as follows:
 
-```
+```javascript
   const EMailAddress = '...'
   const Password     = '...'
   await VoltCloud.actOnBehalfOfDeveloper(EMailAddress,Password)
